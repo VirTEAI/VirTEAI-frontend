@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: virteai-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run db:migrate && npm run db:seed
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Preenchidos manualmente no painel do Render (não vêm neste arquivo
+      # por serem segredos / específicos do seu banco e domínio):
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false

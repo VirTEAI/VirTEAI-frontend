@@ -1,0 +1,32 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+server/.env
+
+# Imagens de mundo enviadas via upload (armazenamento local — Fase 4)
+server/uploads/
+# Pasta separada usada pelos testes (UPLOAD_DIR em vitest.config.js), pro
+# `npm test` não escrever arquivos de verdade em server/uploads/
+server/uploads-test/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

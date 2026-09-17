@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------------
+   Design tokens — camada de refinamento "Apple", pedida explicitamente:
+   manter a fidelidade visual (cores da marca, layout, conteúdo) só que com
+   muito mais cuidado de acabamento — os neutros exatos que a Apple usa pra
+   texto/traços/fundo (não é clone de marca, é vocabulário de UI padrão:
+   cinza-texto #6e6e73, traço #d2d2d7, fundo #fbfbfd), sombras bem suaves e
+   grandes em vez de bordas duras, e uma classe de "vidro" pra barras de
+   navegação fixas. Definidos via @theme (Tailwind v4) pra virarem utilitários
+   de verdade — text-ink, bg-surface, border-hairline, shadow-soft etc. —
+   sem precisar repetir hex em cada arquivo tocado nesta leva.
+   ------------------------------------------------------------------------ */
+@theme {
+  --color-ink: #1d1d1f;
+  --color-ink-secondary: #6e6e73;
+  --color-ink-tertiary: #86868b;
+  --color-hairline: #d2d2d7;
+  --color-hairline-soft: #e8e8ed;
+  --color-surface: #fbfbfd;
+
+  /* Azul tecnológico — cor PRIMÁRIA de toda a interface a partir desta leva
+     (reformulação visual completa). Substitui o preto/tinta como cor de
+     botão/ação principal; ink continua servindo só para texto e neutros.
+     brand = ação padrão (botões, links, foco, nav ativa); brand-deep = estados
+     de ênfase/hover/elementos "importantes"; brand-soft = tint muito claro
+     pra fundos de badge/hover discretos; accent-cyan = detalhe pontual
+     (indicadores pequenos, glow de foco), nunca em áreas grandes. */
+  --color-brand: #0973ba;
+  --color-brand-deep: #075a92;
+  --color-brand-soft: #eaf4fb;
+  --color-accent-cyan: #22b8c9;
+
+  /* Estados semânticos — os mesmos tons que já apareciam soltos em
+     AccessCodes/GenerateCodeModal, agora nomeados como tokens reutilizáveis
+     em todo o app (badges, alerts, inputs com erro/sucesso). */
+  --color-success: #16794f;
+  --color-success-soft: #e6f7f0;
+  --color-warning: #92400e;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #b42318;
+  --color-danger-soft: #fee2e2;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 28px -8px rgb(0 0 0 / 0.08);
+  --shadow-elevated: 0 8px 16px -4px rgb(0 0 0 / 0.06), 0 32px 64px -16px rgb(0 0 0 / 0.18);
+  --shadow-button: 0 8px 20px -6px rgb(0 0 0 / 0.25);
+
+  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Reset básico dentro de @layer base — importante no Tailwind v4: regras
+   fora de qualquer @layer têm prioridade sobre TODAS as camadas do Tailwind
+   (inclusive utilities), não importa a especificidade. Isso fazia o botão
+   "Entrar" do header (um <a> via NavLink) ficar com o texto preto mesmo
+   tendo a classe text-white, porque "a { color: inherit }" (fora de layer)
+   sempre vencia. Colocando o reset dentro de @layer base, as classes
+   utilitárias (camada utilities, que vem depois de base) voltam a poder
+   sobrescrever a cor normalmente. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #000;
+    background: #fbfbfd;
+  }
+
+  #root {
+    min-height: 100svh;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+/* Vidro fosco (recipe real da Apple pra barra de navegação fixa: saturação
+   180% + blur, sobre branco quase opaco) — usado nos headers fixos. Fica em
+   @layer components pra continuar perdendo de qualquer utilitário aplicado
+   junto na mesma tag (ex.: bg-white/90 pontual num breakpoint). */
+@layer components {
+  .vt-glass-nav {
+    background-color: rgb(255 255 255 / 0.82);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+}

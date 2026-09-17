@@ -1,0 +1,2 @@
+ALTER TABLE "access_codes" ALTER COLUMN "world_id" SET DATA TYPE varchar(80);--> statement-breakpoint
+ALTER TABLE "access_codes" ADD CONSTRAINT "access_codes_world_id_worlds_id_fk" FOREIGN KEY ("world_id") REFERENCES "public"."worlds"("id") ON DELETE restrict ON UPDATE no action;
