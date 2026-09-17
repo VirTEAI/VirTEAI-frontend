@@ -54,8 +54,10 @@ atualizado conforme avançamos — pense nele como o "mapa" do projeto.
       API real em vez dos números de exemplo fixos.
 - [ ] **Fase 6 — Avaliações, aprovação de terapeuta e notificações**.
 - [ ] **Fase 7 — Armazenamento de arquivo real** (laudo, thumbnails).
-- [ ] **Fase 8 — Deploy**: escolher hospedagem real pra banco + API +
-      front, variáveis de ambiente de produção, domínio.
+- [ ] **Fase 8 — Deploy**: banco já resolvido (Neon, seção 9). Front
+      (Vercel) e back (Render) configurados e prontos — só falta você
+      executar os passos de login/conta em `DEPLOY.md` (não posso criar
+      contas nem colar segredos em painéis por você).
 
 Cada checkbox marcado tem um teste automatizado passando por trás — nada
 fica "feito" só porque o código foi escrito.

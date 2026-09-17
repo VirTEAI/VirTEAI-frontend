@@ -2,6 +2,9 @@
 
 Início do site, gerado a partir do Figma (React + Vite + Tailwind CSS v4 + React Router).
 
+> Backend real, testes e roadmap: `BACKEND_ROADMAP.md` e `server/README.md`.
+> Deploy em produção (Vercel + Render + Neon): `DEPLOY.md`.
+
 ## Páginas incluídas
 
 Landing (pública):
