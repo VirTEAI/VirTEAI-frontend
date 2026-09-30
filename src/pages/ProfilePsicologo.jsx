@@ -195,9 +195,18 @@ export default function ProfilePsicologo() {
             <motion.div variants={staggerItem} className="flex flex-col gap-6">
               {/* Meus pacientes */}
               <div className="rounded-2xl border border-hairline-soft bg-white p-6 shadow-soft">
-                <h2 className="mb-4 text-[19.8px] font-semibold tracking-tight text-ink">
-                  Meus Pacientes:
-                </h2>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-[19.8px] font-semibold tracking-tight text-ink">Meus Pacientes:</h2>
+                  {isSelf && patients.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/pacientes')}
+                      className="text-[12.5px] font-medium text-brand transition-colors duration-200 hover:text-brand-deep"
+                    >
+                      Gerenciar todos
+                    </button>
+                  )}
+                </div>
                 {patients.length > 0 ? (
                   <div className="flex flex-col gap-4">
                     {patients.map((patient) => (

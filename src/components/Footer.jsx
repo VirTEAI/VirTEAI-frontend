@@ -1,5 +1,6 @@
 import SafeImage from './SafeImage';
 import { WaveDivider } from './icons';
+import { useAuth } from '../context/AuthContext';
 
 // Logo real ainda pendente de exportação no Figma — SafeImage evita que o
 // link quebrado estoure o layout enquanto isso.
@@ -7,6 +8,11 @@ const imgLogo =
   'https://www.figma.com/api/mcp/asset/5b06928c-fe00-4658-a0e0-4f6050128a7f.png';
 
 export default function Footer() {
+  // "Entrar" só faz sentido pra quem ainda não tem sessão — mostrar esse
+  // link pra quem já está logado (inclusive em telas internas, tipo o
+  // painel do admin) não leva a lugar nenhum de útil.
+  const { user } = useAuth();
+
   return (
     <footer className="relative overflow-hidden border-t border-hairline-soft bg-surface px-6 pb-10 pt-16 md:px-20">
       <WaveDivider
@@ -28,9 +34,11 @@ export default function Footer() {
         </div>
 
         <nav className="flex gap-8 text-[15px] text-ink-secondary">
-          <a href="/login" className="transition-colors duration-200 hover:text-ink">
-            Entrar
-          </a>
+          {!user && (
+            <a href="/login" className="transition-colors duration-200 hover:text-ink">
+              Entrar
+            </a>
+          )}
           <a href="#termos" className="transition-colors duration-200 hover:text-ink">
             Termos
           </a>

@@ -12,6 +12,7 @@ export function usePatients() {
   const { user } = useAuth();
   const [patients, setPatients] = useState([]);
   const [isLoading, setIsLoading] = useState(Boolean(user) && user.role !== 'paciente');
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,7 +33,14 @@ export function usePatients() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, reloadToken]);
 
-  return { patients, isLoading };
+  // Chamado depois de editar os dados de um paciente ("Gerenciar
+  // Pacientes") pra lista refletir a mudança sem precisar recarregar a
+  // página inteira.
+  function refresh() {
+    setReloadToken((t) => t + 1);
+  }
+
+  return { patients, isLoading, refresh };
 }

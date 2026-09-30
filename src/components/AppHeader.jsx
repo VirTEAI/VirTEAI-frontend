@@ -56,6 +56,10 @@ export default function AppHeader({ showBack = false, onBack, onNotificationsCli
   const showDashboardLink = user?.role === 'paciente' || user?.role === 'terapeuta';
   const showAdminLink = user?.role === 'admin';
   const showCodesLink = user?.role === 'terapeuta' || user?.role === 'admin';
+  // "Gerenciar Pacientes" — só o terapeuta tem essa tela; o admin já
+  // enxerga todos os pacientes de todos os terapeutas em "Painel Admin" →
+  // Gerenciar Terapeutas.
+  const showPatientsLink = user?.role === 'terapeuta';
 
   return (
     <>
@@ -82,6 +86,11 @@ export default function AppHeader({ showBack = false, onBack, onNotificationsCli
             {showAdminLink && (
               <NavLink to="/admin" className={navLinkClass}>
                 Painel Admin
+              </NavLink>
+            )}
+            {showPatientsLink && (
+              <NavLink to="/pacientes" className={navLinkClass}>
+                Pacientes
               </NavLink>
             )}
             {showCodesLink && (
@@ -156,6 +165,15 @@ export default function AppHeader({ showBack = false, onBack, onNotificationsCli
                     onClick={() => setMobileOpen(false)}
                   >
                     Painel Admin
+                  </NavLink>
+                )}
+                {showPatientsLink && (
+                  <NavLink
+                    to="/pacientes"
+                    className={mobileNavLinkClass}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Pacientes
                   </NavLink>
                 )}
                 {showCodesLink && (
