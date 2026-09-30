@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { WaveDivider } from '../components/icons';
 import { fadeInUp, staggerContainer, staggerItem, easeOut } from '../lib/motion';
 
 const imgLogoMark =
@@ -9,8 +10,6 @@ const imgRocket =
   'https://www.figma.com/api/mcp/asset/747f4d62-a3f1-4585-8760-3109a1b365e2.png';
 const imgColabLogo =
   'https://www.figma.com/api/mcp/asset/c1c59a1d-66d3-4437-a550-2f74b8570e14.png';
-const imgWave =
-  'https://www.figma.com/api/mcp/asset/28842309-8f44-4822-ade8-18370241cc54.svg';
 
 const team = [1, 2, 3, 4, 5, 6];
 
@@ -122,14 +121,13 @@ export default function AboutUs() {
           transition={{ duration: 0.6 }}
           className="px-6 py-14 md:py-16"
         >
-          <motion.img
-            src={imgWave}
-            alt=""
+          <motion.div
             aria-hidden="true"
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            className="h-[60px] w-full object-cover"
-          />
+          >
+            <WaveDivider className="h-[6px] w-full" />
+          </motion.div>
         </motion.section>
 
         {/* Instituições parceiras */}

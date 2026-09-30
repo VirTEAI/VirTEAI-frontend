@@ -6,11 +6,11 @@ import Footer from '../components/Footer';
 import WorldCard from '../components/WorldCard';
 import DashboardOpenModal from '../components/DashboardOpenModal';
 import SafeImage from '../components/SafeImage';
+import { SearchIcon } from '../components/icons';
 import { useAuth } from '../context/AuthContext';
 import { useWorlds } from '../hooks/useWorlds';
 import { fadeInUp, staggerContainer } from '../lib/motion';
 
-const imgSearch = 'https://www.figma.com/api/mcp/asset/d988e1ef-f4a2-4e15-8b6a-86c0d99ddf9f.png';
 const imgBanner = 'https://www.figma.com/api/mcp/asset/a270abd0-53e8-4503-bcbe-b534e957e797.png';
 
 const ROLE_LABEL = {
@@ -83,7 +83,7 @@ export default function Dashboard() {
               Filtrar
             </button>
             <div className="flex h-[38px] w-full max-w-[308px] items-center gap-2 rounded-full bg-surface px-4 ring-1 ring-inset ring-hairline-soft transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand">
-              <img src={imgSearch} alt="" className="h-[15px] w-[15px] opacity-60" />
+              <SearchIcon className="h-[15px] w-[15px] text-ink-tertiary opacity-60" />
               <input
                 type="search"
                 placeholder="Mundo Empresarial...."

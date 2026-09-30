@@ -3,14 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
+import { CheckCrossIcon } from '../components/icons';
 import EditProfileModal from '../components/EditProfileModal';
 import { useAuth } from '../context/AuthContext';
 import { usePatients } from '../hooks/usePatients';
 import { apiFetch } from '../lib/api-client';
 import { calcAge } from '../lib/age';
 import { fadeInUp, staggerContainer, staggerItem } from '../lib/motion';
-
-const imgCheckCross = 'https://www.figma.com/api/mcp/asset/b9cc8b4e-a682-46d5-b46b-c291d3166afd.png';
 
 // Testes de triagem — ainda não modelados no backend (isso é Fase futura,
 // fora do escopo de "pacientes & perfis"); por ora continuam ilustrativos.
@@ -238,10 +237,9 @@ export default function Profile() {
                 <div className="flex flex-col gap-4">
                   {tests.map((test) => (
                     <div key={test.name} className="flex items-start gap-3">
-                      <img
-                        src={imgCheckCross}
-                        alt={test.done ? 'Concluído' : 'Em andamento'}
-                        className="mt-1 h-[22px] w-[21px]"
+                      <CheckCrossIcon
+                        done={test.done}
+                        className={`mt-1 h-[22px] w-[21px] ${test.done ? 'text-success' : 'text-ink-tertiary'}`}
                       />
                       <div className="flex-1">
                         <p className="text-[15px] text-ink">{test.name}</p>

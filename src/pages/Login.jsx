@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthShell from '../components/AuthShell';
+import { LetterIcon, LockIcon, EyeIcon, EyeOffIcon } from '../components/icons';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { buttonTap, buttonHover } from '../lib/motion';
 
@@ -9,13 +10,6 @@ import { buttonTap, buttonHover } from '../lib/motion';
 // foco na cor da marca (a mesma trocada em todo o fluxo de auth).
 const fieldClass =
   'flex items-center gap-[10px] rounded-full bg-surface px-4 py-[10px] ring-1 ring-inset ring-hairline-soft transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand';
-
-const imgLetter =
-  'https://www.figma.com/api/mcp/asset/522cc5cd-01a8-43af-a4bc-86fc1bccc859.png';
-const imgLock =
-  'https://www.figma.com/api/mcp/asset/6805ab61-1339-40ca-b6f1-f42b3d14f00f.png';
-const imgEye =
-  'https://www.figma.com/api/mcp/asset/2dd74428-1953-4cf1-b3a8-9af39aba7a12.png';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +64,7 @@ export default function Login() {
             E-mail
           </label>
           <div className={fieldClass}>
-            <img src={imgLetter} alt="" className="h-[23px] w-[19px] object-contain" />
+            <LetterIcon className="h-[23px] w-[19px] text-ink-secondary" />
             <input
               id="email"
               type="email"
@@ -90,7 +84,7 @@ export default function Login() {
           </label>
           <div className={`justify-between gap-[15px] ${fieldClass}`}>
             <div className="flex flex-1 items-center gap-[15px]">
-              <img src={imgLock} alt="" className="h-5 w-5 object-contain" />
+              <LockIcon className="h-5 w-5 text-ink-secondary" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -108,7 +102,11 @@ export default function Login() {
               aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               className="shrink-0"
             >
-              <img src={imgEye} alt="" className="h-5 w-5 object-contain" />
+              {showPassword ? (
+                <EyeOffIcon className="h-5 w-5 text-ink-secondary" />
+              ) : (
+                <EyeIcon className="h-5 w-5 text-ink-secondary" />
+              )}
             </button>
           </div>
         </div>

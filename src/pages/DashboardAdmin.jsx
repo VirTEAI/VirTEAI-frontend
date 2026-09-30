@@ -4,15 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
+import { SearchIcon, LinkIcon, UserIcon } from '../components/icons';
 import WorldCard from '../components/WorldCard';
 import VincularMundoModal from '../components/VincularMundoModal';
 import NotificationsModal from '../components/NotificationsModal';
 import { useWorlds } from '../hooks/useWorlds';
 import { fadeInUp, staggerContainer, buttonTap, buttonHover } from '../lib/motion';
 
-const imgSearch = 'https://www.figma.com/api/mcp/asset/3fd68137-5c75-4630-b40a-7526ab81558f.png';
-const imgLink = 'https://www.figma.com/api/mcp/asset/4e618a44-11db-4cde-a4ae-fd9350b54d3f.png';
-const imgUser = 'https://www.figma.com/api/mcp/asset/3a37b205-1680-43c4-8407-e683fd917976.png';
 const imgBanner = 'https://www.figma.com/api/mcp/asset/9e1de782-9774-4f61-a3d9-959e6065f598.png';
 
 const imgAvatar1 = 'https://www.figma.com/api/mcp/asset/c15449d4-ecda-46f1-a4fb-88af275d9ced.png';
@@ -86,7 +84,7 @@ export default function DashboardAdmin() {
 
           <div className="mb-12 flex justify-end">
             <div className="flex h-[38px] w-full max-w-[308px] items-center gap-2 rounded-full border border-hairline px-4 transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand">
-              <img src={imgSearch} alt="" className="h-[15px] w-[15px]" />
+              <SearchIcon className="h-[15px] w-[15px] text-ink-tertiary" />
               <input
                 type="search"
                 placeholder="Mundo Empresarial...."
@@ -111,7 +109,7 @@ export default function DashboardAdmin() {
               className="group flex items-center gap-4 rounded-2xl border border-hairline-soft bg-white p-5 text-left shadow-soft transition-all duration-200 hover:border-brand hover:shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-deep">
-                <img src={imgLink} alt="" className="h-5 w-5" />
+                <LinkIcon className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-semibold text-ink">Vincular um novo Mundo</span>
@@ -136,7 +134,7 @@ export default function DashboardAdmin() {
               className="group flex items-center gap-4 rounded-2xl border border-hairline-soft bg-white p-5 text-left shadow-soft transition-all duration-200 hover:border-brand hover:shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-deep">
-                <img src={imgUser} alt="" className="h-5 w-5" />
+                <UserIcon className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-semibold text-ink">Novo Terapeuta</span>

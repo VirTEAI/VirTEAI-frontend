@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../lib/api-client';
+import { ImagePlaceholderIcon } from './icons';
 import { overlayFade, modalScale, buttonTap, buttonHover } from '../lib/motion';
 
-const imgImagePlaceholder =
-  'https://www.figma.com/api/mcp/asset/cde7d88b-d093-41e2-8301-807df58552df.png';
 
 function PhotoSlot({ file, onPick, wide = false }) {
   const inputRef = useRef(null);
@@ -28,7 +27,7 @@ function PhotoSlot({ file, onPick, wide = false }) {
       {previewUrl ? (
         <img src={previewUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <img src={imgImagePlaceholder} alt="" className="h-8 w-8 opacity-60" />
+        <ImagePlaceholderIcon className="h-8 w-8 text-ink-tertiary opacity-60" />
       )}
       <input
         ref={inputRef}

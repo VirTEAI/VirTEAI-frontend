@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthShell from '../components/AuthShell';
+import { LetterIcon } from '../components/icons';
 import { useAuth, DEMO_ACCOUNTS } from '../context/AuthContext';
 import { fadeInUp, staggerContainer, staggerItem, buttonTap, buttonHover } from '../lib/motion';
 
@@ -10,8 +11,6 @@ import { fadeInUp, staggerContainer, staggerItem, buttonTap, buttonHover } from 
 // README). O texto original fala em "link", mas a tela seguinte do próprio
 // Figma ("CodeAuthentication") já fala em "código" — adaptamos a cópia daqui
 // pra "código" pra manter o fluxo coerente, sem inventar uma etapa nova.
-const imgLetter =
-  'https://www.figma.com/api/mcp/asset/522cc5cd-01a8-43af-a4bc-86fc1bccc859.png';
 
 const fieldClass =
   'flex items-center gap-[10px] rounded-full bg-surface px-4 py-[10px] ring-1 ring-inset ring-hairline-soft transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand';
@@ -65,7 +64,7 @@ export default function ForgotPassword() {
             E-mail
           </label>
           <div className={fieldClass}>
-            <img src={imgLetter} alt="" className="h-[23px] w-[19px] object-contain" />
+            <LetterIcon className="h-[23px] w-[19px] text-ink-secondary" />
             <input
               id="email"
               type="email"

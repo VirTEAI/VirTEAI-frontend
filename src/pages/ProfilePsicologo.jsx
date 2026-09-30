@@ -3,14 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
+import { ArchiveIcon } from '../components/icons';
 import EditProfileModal from '../components/EditProfileModal';
 import { useAuth } from '../context/AuthContext';
 import { usePatients } from '../hooks/usePatients';
 import { apiFetch } from '../lib/api-client';
 import { calcAge } from '../lib/age';
 import { fadeInUp, staggerContainer, staggerItem } from '../lib/motion';
-
-const imgArchive = 'https://www.figma.com/api/mcp/asset/d9101ac7-fb0a-4638-b840-cdeed39237c0.png';
 
 // "Relatórios Recentes" — ainda não modelado no backend (fica pra quando
 // sessões/analytics existirem de verdade); por ora continua ilustrativo.
@@ -237,7 +236,7 @@ export default function ProfilePsicologo() {
                     {reports.map((report, i) => (
                       <div key={i} className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-2">
-                          <img src={imgArchive} alt="" className="mt-0.5 h-[25px] w-[25px]" />
+                          <ArchiveIcon className="mt-0.5 h-[25px] w-[25px] text-ink-secondary" />
                           <div>
                             <p className="text-[15px] text-ink">{report.title}</p>
                             <p className="text-[12px] text-ink-tertiary">{report.description}</p>

@@ -4,12 +4,12 @@ import { motion } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
+import { AreaPinIcon } from '../components/icons';
 import { useWorlds } from '../hooks/useWorlds';
 import { apiFetch } from '../lib/api-client';
 import { fadeInUp, staggerContainer, staggerItem } from '../lib/motion';
 
 const imgHeatmap = 'https://www.figma.com/api/mcp/asset/381b73bd-95e1-4c0b-a8a2-5862d22d1dc6.png';
-const imgAreaIcon = 'https://www.figma.com/api/mcp/asset/f9ac6be1-0665-4abe-816f-4ae249de90f7.png';
 
 const RANK_SUFFIX = ['1º', '2º', '3º', '4º', '5º', '6º', '7º', '8º', '9º', '10º'];
 
@@ -177,7 +177,7 @@ export default function SessionSummary() {
                       className="flex items-center gap-3"
                     >
                       <span className="w-[22px] shrink-0 text-[16px] text-ink">{area.rank}</span>
-                      <SafeImage src={imgAreaIcon} alt="" className="h-[40px] w-[40px]" rounded />
+                      <span className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-deep"><AreaPinIcon className="h-5 w-5" /></span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[14px] text-ink">{area.name}</p>
                         <span className="mt-1 inline-flex items-center rounded-full bg-brand-soft px-2.5 py-0.5 text-[10px] font-semibold text-brand-deep">

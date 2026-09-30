@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import { FootprintsIcon } from '../components/icons';
 import Footer from '../components/Footer';
 import { fadeInUp, fadeIn, staggerContainer, staggerItem, easeOut, buttonTap, buttonHover } from '../lib/motion';
 
@@ -30,8 +31,6 @@ const imgMundo2 =
   'https://www.figma.com/api/mcp/asset/6d3dff04-f746-4805-80fa-77bc18edacbe.png';
 const imgMundo3 =
   'https://www.figma.com/api/mcp/asset/952aa373-7ddb-4813-9c25-ee6c0f7fc115.png';
-const imgFootprints =
-  'https://www.figma.com/api/mcp/asset/a54f23b1-7d13-4031-8d41-77369d92a36a.svg';
 const imgColabLogo =
   'https://www.figma.com/api/mcp/asset/04cd15e4-5f48-4cf1-a2ba-e3db7df917fc.png';
 
@@ -249,11 +248,9 @@ export default function Home() {
                 Você recebe atualizações simples, sem jargões, e orientações práticas para apoiar
                 o desenvolvimento no dia a dia.
               </p>
-              <img
-                src={imgFootprints}
-                alt=""
+              <FootprintsIcon
                 aria-hidden="true"
-                className="mt-6 hidden h-[96px] w-[82px] opacity-70 sm:block"
+                className="mt-6 hidden h-[96px] w-[82px] text-brand opacity-70 sm:block"
               />
             </motion.div>
           </motion.div>

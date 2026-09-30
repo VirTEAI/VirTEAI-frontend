@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthShell from '../components/AuthShell';
+import { LockIcon } from '../components/icons';
 import { useAuth } from '../context/AuthContext';
 import { fadeInUp, staggerContainer, staggerItem, buttonTap, buttonHover } from '../lib/motion';
 
 // Passo 3/3 — dentro do arquivo do Figma esse conteúdo mora num segundo
 // frame também chamado "CodeAuthentication", mas o grupo interno dele já se
 // chama "Redefinição" e o botão já vem com o texto certo: "Trocar Senha".
-const imgLock =
-  'https://www.figma.com/api/mcp/asset/6805ab61-1339-40ca-b6f1-f42b3d14f00f.png';
 
 const fieldClass =
   'flex items-center gap-[10px] rounded-full bg-surface px-4 py-[10px] ring-1 ring-inset ring-hairline-soft transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand';
@@ -107,7 +106,7 @@ export default function ResetPassword() {
                   Nova Senha
                 </label>
                 <div className={fieldClass}>
-                  <img src={imgLock} alt="" className="h-5 w-5 object-contain" />
+                  <LockIcon className="h-5 w-5 text-ink-secondary" />
                   <input
                     id="newPassword"
                     type="password"
@@ -129,7 +128,7 @@ export default function ResetPassword() {
                   Confirme a Senha
                 </label>
                 <div className={fieldClass}>
-                  <img src={imgLock} alt="" className="h-5 w-5 object-contain" />
+                  <LockIcon className="h-5 w-5 text-ink-secondary" />
                   <input
                     id="confirmPassword"
                     type="password"

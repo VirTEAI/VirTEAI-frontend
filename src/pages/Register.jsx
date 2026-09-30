@@ -2,13 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthShell from '../components/AuthShell';
+import { LetterIcon, LockIcon } from '../components/icons';
 import { useAuth } from '../context/AuthContext';
 import { fadeInUp, staggerContainer, staggerItem, buttonTap, buttonHover } from '../lib/motion';
 
-const imgLetter =
-  'https://www.figma.com/api/mcp/asset/f86b6666-4191-4922-8491-67e3a43c5947.png';
-const imgLock =
-  'https://www.figma.com/api/mcp/asset/6805ab61-1339-40ca-b6f1-f42b3d14f00f.png';
 
 const fieldClass =
   'flex items-center gap-[10px] rounded-full bg-surface px-4 py-[10px] ring-1 ring-inset ring-hairline-soft transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand';
@@ -83,7 +80,7 @@ export default function Register() {
             Nome Completo
           </label>
           <div className={fieldClass}>
-            <img src={imgLetter} alt="" className="h-[23px] w-[19px] object-contain" />
+            <LetterIcon className="h-[23px] w-[19px] text-ink-secondary" />
             <input
               id="fullName"
               type="text"
@@ -102,7 +99,7 @@ export default function Register() {
             E-mail
           </label>
           <div className={fieldClass}>
-            <img src={imgLetter} alt="" className="h-[23px] w-[19px] object-contain" />
+            <LetterIcon className="h-[23px] w-[19px] text-ink-secondary" />
             <input
               id="email"
               type="email"
@@ -121,7 +118,7 @@ export default function Register() {
             Senha
           </label>
           <div className={fieldClass}>
-            <img src={imgLock} alt="" className="h-5 w-5 object-contain" />
+            <LockIcon className="h-5 w-5 text-ink-secondary" />
             <input
               id="password"
               type="password"
@@ -140,7 +137,7 @@ export default function Register() {
             Confirme a Senha
           </label>
           <div className={fieldClass}>
-            <img src={imgLock} alt="" className="h-5 w-5 object-contain" />
+            <LockIcon className="h-5 w-5 text-ink-secondary" />
             <input
               id="confirmPassword"
               type="password"

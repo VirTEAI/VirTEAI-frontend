@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import { apiFetch } from '../lib/api-client';
 import { fadeInUp } from '../lib/motion';
+import { SearchIcon } from '../components/icons';
 
 function formatGeneratedAt(isoDate) {
   return new Intl.DateTimeFormat('pt-BR', {
@@ -16,7 +17,6 @@ function formatGeneratedAt(isoDate) {
   }).format(new Date(isoDate));
 }
 
-const imgSearch = 'https://www.figma.com/api/mcp/asset/3fd68137-5c75-4630-b40a-7526ab81558f.png';
 
 const STATUS_STYLES = {
   pendente: { label: 'Pendente', bg: 'bg-warning-soft', text: 'text-warning' },
@@ -90,7 +90,7 @@ export default function AccessCodes() {
           >
             <h1 className="text-[28px] text-ink">Códigos de Acesso Gerados</h1>
             <div className="flex h-[38px] w-full max-w-[308px] items-center gap-2 rounded-full border border-hairline bg-white px-4 transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand">
-              <img src={imgSearch} alt="" className="h-[15px] w-[15px]" />
+              <SearchIcon className="h-[15px] w-[15px] text-ink-tertiary" />
               <input
                 type="search"
                 value={search}

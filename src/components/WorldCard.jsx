@@ -1,10 +1,7 @@
 import { motion } from 'framer-motion';
 import SafeImage from './SafeImage';
+import { HeartIcon, ThumbsUpIcon, EyeIcon } from './icons';
 import { staggerItem } from '../lib/motion';
-
-const imgFavorite = 'https://www.figma.com/api/mcp/asset/fd17b4a2-df56-4a29-a5a4-84e243405365.png';
-const imgThumbsUp = 'https://www.figma.com/api/mcp/asset/a3bab0ad-0001-4457-9f3c-bc90de68622a.png';
-const imgEye = 'https://www.figma.com/api/mcp/asset/52fe48b6-abab-4cf6-9c9f-16b9d0e692af.png';
 
 export default function WorldCard({ world, onSelect }) {
   return (
@@ -30,13 +27,13 @@ export default function WorldCard({ world, onSelect }) {
       <div className="flex w-full items-center justify-between">
         <p className="text-[16px] font-medium text-ink">{world.title}</p>
         <div className="flex items-center gap-2">
-          <img src={imgFavorite} alt="" className="h-4 w-4 opacity-70" />
+          <HeartIcon className="h-4 w-4 text-ink-secondary opacity-70" />
           <span className="flex items-center gap-1 text-[13px] text-ink-secondary">
-            <img src={imgThumbsUp} alt="" className="h-[13px] w-[13px] opacity-70" />
+            <ThumbsUpIcon className="h-[13px] w-[13px] opacity-70" />
             {world.likes}
           </span>
           <span className="flex items-center gap-1 text-[13px] text-ink-secondary">
-            <img src={imgEye} alt="" className="h-[13px] w-[13px] opacity-70" />
+            <EyeIcon className="h-[13px] w-[13px] opacity-70" />
             {world.views}
           </span>
         </div>

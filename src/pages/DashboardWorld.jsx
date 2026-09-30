@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
+import { ThumbsUpIcon, EyeIcon, VerifiedIcon, CommentIcon, HeartIcon } from '../components/icons';
 import PatientSelector from '../components/PatientSelector';
 import GenerateCodeModal from '../components/GenerateCodeModal';
 import { useAuth } from '../context/AuthContext';
@@ -17,15 +18,6 @@ function formatLaunchedAt(isoDate) {
   );
 }
 
-const imgThumbsUp =
-  'https://www.figma.com/api/mcp/asset/f3a22293-4a42-4e56-a94d-9618cb74f713.png';
-const imgEye = 'https://www.figma.com/api/mcp/asset/668e7ae7-eb4f-4670-8bf9-0bde5bc65dea.png';
-const imgVerified =
-  'https://www.figma.com/api/mcp/asset/6d6bc358-3bbc-474d-b602-b6099592223a.png';
-const imgComments =
-  'https://www.figma.com/api/mcp/asset/05eecb4d-b8f9-41f2-a3d8-2a5732bdbc7d.png';
-const imgFavorite =
-  'https://www.figma.com/api/mcp/asset/4e65af6c-4263-4d03-b190-4f3419ef59dd.png';
 const imgAvatarComment =
   'https://www.figma.com/api/mcp/asset/c0d9bce9-7097-450a-806f-d374e7b2c1e0.png';
 
@@ -108,11 +100,11 @@ export default function DashboardWorld() {
                 <h1 className="text-[24px] font-semibold tracking-tight text-ink">{world.title}</h1>
                 <div className="flex items-center gap-5">
                   <span className="flex items-center gap-1.5 text-[16px] text-ink-secondary">
-                    <img src={imgThumbsUp} alt="" className="h-[18px] w-[18px] opacity-70" />
+                    <ThumbsUpIcon className="h-[18px] w-[18px] opacity-70" />
                     {world.likes}
                   </span>
                   <span className="flex items-center gap-1.5 text-[16px] text-ink-secondary">
-                    <img src={imgEye} alt="" className="h-[17px] w-[17px] opacity-70" />
+                    <EyeIcon className="h-[17px] w-[17px] opacity-70" />
                     {world.views}
                   </span>
                 </div>
@@ -125,7 +117,7 @@ export default function DashboardWorld() {
               <div className="mb-6 flex items-center gap-1.5 text-[14px] text-ink-secondary">
                 <span>Desenvolvido por</span>
                 <span className="text-[#67a379]">VirTEAI</span>
-                <img src={imgVerified} alt="Verificado" className="h-5 w-5" />
+                <VerifiedIcon className="h-5 w-5" />
                 <span className="ml-4">Lançado em</span>
                 <span className="text-[#67a379]">{formatLaunchedAt(world.launchedAt)}</span>
               </div>
@@ -136,21 +128,21 @@ export default function DashboardWorld() {
                   aria-label="Favoritar"
                   className="flex h-[49px] w-[49px] items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-hairline-soft transition-colors duration-200 hover:bg-hairline-soft"
                 >
-                  <img src={imgFavorite} alt="" className="h-[23px] w-[23px]" />
+                  <HeartIcon className="h-[23px] w-[23px]" />
                 </button>
                 <button
                   type="button"
                   aria-label="Curtir"
                   className="flex h-[49px] w-[49px] items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-hairline-soft transition-colors duration-200 hover:bg-hairline-soft"
                 >
-                  <img src={imgThumbsUp} alt="" className="h-[23px] w-[23px]" />
+                  <ThumbsUpIcon className="h-[23px] w-[23px]" />
                 </button>
                 <button
                   type="button"
                   aria-label="Comentar"
                   className="flex h-[49px] w-[49px] items-center justify-center rounded-full bg-surface ring-1 ring-inset ring-hairline-soft transition-colors duration-200 hover:bg-hairline-soft"
                 >
-                  <img src={imgComments} alt="" className="h-[23px] w-[23px]" />
+                  <CommentIcon className="h-[23px] w-[23px]" />
                 </button>
               </div>
 

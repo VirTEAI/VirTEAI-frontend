@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import UserMenu from './UserMenu';
+import SafeImage from './SafeImage';
+import { BellIcon } from './icons';
 import { useAuth } from '../context/AuthContext';
 import { mobileMenu, buttonTap, buttonHover } from '../lib/motion';
 
+// Logo real ainda pendente de exportação no Figma — SafeImage evita que o
+// link quebrado estoure o layout enquanto isso.
 const imgLogo =
   'https://www.figma.com/api/mcp/asset/5b06928c-fe00-4658-a0e0-4f6050128a7f.png';
-const imgBell =
-  'https://www.figma.com/api/mcp/asset/b2828943-fc1b-4a21-8323-fe5e3a9bd330.png';
 
 const navLinkClass = ({ isActive }) =>
   `text-[14.8px] leading-normal transition-colors duration-200 ${
@@ -63,7 +65,7 @@ export default function Header() {
     >
       <div className="mx-auto flex h-[96px] w-full max-w-[1440px] items-center justify-between px-6 md:px-10">
         <NavLink to="/" className="flex h-[84px] w-[198px] shrink-0 items-center overflow-hidden">
-          <img src={imgLogo} alt="VirTEAI" className="h-full w-full object-contain" />
+          <SafeImage src={imgLogo} alt="VirTEAI" className="h-full w-full" />
         </NavLink>
 
         <nav className="hidden items-center gap-[50px] md:flex">
@@ -96,7 +98,7 @@ export default function Header() {
         {user ? (
           <div className="flex items-center gap-4 sm:gap-6">
             <span className="hidden rounded-full p-1.5 opacity-80 sm:block">
-              <img src={imgBell} alt="Notificações" className="h-6 w-6" />
+              <BellIcon className="h-6 w-6 text-ink" />
             </span>
             <UserMenu />
             <button
@@ -112,7 +114,7 @@ export default function Header() {
         ) : (
           <div className="flex items-center gap-4 sm:gap-6">
             <span className="hidden rounded-full p-1.5 opacity-80 sm:block">
-              <img src={imgBell} alt="Notificações" className="h-6 w-6" />
+              <BellIcon className="h-6 w-6 text-ink" />
             </span>
             <NavLink
               to="/register"

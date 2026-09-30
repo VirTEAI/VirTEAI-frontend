@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SafeImage from './SafeImage';
+import { FullscreenIcon, ThumbsUpIcon, EyeIcon, VerifiedIcon } from './icons';
 import PatientSelector from './PatientSelector';
 import GenerateCodeModal from './GenerateCodeModal';
 import { useAuth } from '../context/AuthContext';
 import { usePatients } from '../hooks/usePatients';
 import { overlayFade, slideFromRight, buttonTap, buttonHover } from '../lib/motion';
 
-const imgThumbsUp = 'https://www.figma.com/api/mcp/asset/04f3c331-3ec4-41b0-8ab3-42ea2d1266f7.png';
-const imgEye = 'https://www.figma.com/api/mcp/asset/f89336d3-c510-46f1-85f0-dbe462c07d18.png';
-const imgVerified = 'https://www.figma.com/api/mcp/asset/0dad4cdb-8df1-46ed-baba-70ca3d887848.png';
-const imgFullScreen = 'https://www.figma.com/api/mcp/asset/cc29922e-2e49-497c-96ef-7bba87161d0e.png';
 
 function ChevronIcon({ direction = 'right', className = '' }) {
   return (
@@ -112,7 +109,7 @@ export default function DashboardOpenModal({ world, worldOrder = [], onClose, on
             onClick={() => onFullscreen(world.id)}
             className="flex h-[30px] w-[30px] items-center justify-center text-ink transition-opacity duration-200 hover:opacity-70"
           >
-            <img src={imgFullScreen} alt="" className="h-full w-full" />
+            <FullscreenIcon className="h-full w-full" />
           </button>
         </div>
 
@@ -140,11 +137,11 @@ export default function DashboardOpenModal({ world, worldOrder = [], onClose, on
           <h2 className="text-[22px] font-semibold tracking-tight text-ink">{world.title}</h2>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-[16px] text-ink-secondary">
-              <img src={imgThumbsUp} alt="" className="h-[18px] w-[18px] opacity-70" />
+              <ThumbsUpIcon className="h-[18px] w-[18px] opacity-70" />
               {world.likes}
             </span>
             <span className="flex items-center gap-1.5 text-[16px] text-ink-secondary">
-              <img src={imgEye} alt="" className="h-[17px] w-[17px] opacity-70" />
+              <EyeIcon className="h-[17px] w-[17px] opacity-70" />
               {world.views}
             </span>
           </div>
@@ -153,7 +150,7 @@ export default function DashboardOpenModal({ world, worldOrder = [], onClose, on
         <div className="mb-4 flex items-center gap-1.5 text-[14px] text-ink-secondary">
           <span>Desenvolvido por</span>
           <span className="text-[#67a379]">VirTEAI</span>
-          <img src={imgVerified} alt="Verificado" className="h-5 w-5" />
+          <VerifiedIcon className="h-5 w-5" />
         </div>
 
         <p className="mb-6 max-w-[522px] text-[14px] leading-relaxed text-ink-secondary">
