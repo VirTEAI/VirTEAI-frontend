@@ -86,6 +86,29 @@ export async function updateUser(req, res) {
     return res.status(403).json({ error: 'Você não tem permissão para editar esse perfil.' });
   }
 
+  // Vincular/desvincular paciente-terapeuta ("Gerenciar Terapeutas", tela de
+  // admin) é mais restrito do que o resto do PATCH: mesmo um terapeuta que
+  // pode editar os dados de um paciente seu não pode reatribuir esse
+  // paciente a outro terapeuta — só admin. `canEdit` acima já garante que
+  // quem chegou até aqui pode editar o perfil de algum jeito; esta checagem
+  // extra é só sobre esse campo específico.
+  if (Object.prototype.hasOwnProperty.call(parsed.data, 'responsibleTherapistId')) {
+    if (actor.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Apenas administradores podem vincular ou desvincular pacientes de terapeutas.',
+      });
+    }
+    if (target.role !== 'paciente') {
+      return res.status(400).json({ error: 'Só é possível vincular um terapeuta a um paciente.' });
+    }
+    if (parsed.data.responsibleTherapistId !== null) {
+      const candidateTherapist = await findUserById(parsed.data.responsibleTherapistId);
+      if (!candidateTherapist || candidateTherapist.role !== 'terapeuta') {
+        return res.status(400).json({ error: 'Terapeuta inválido.' });
+      }
+    }
+  }
+
   if (parsed.data.email && parsed.data.email !== target.email) {
     const [existing] = await db
       .select({ id: users.id })

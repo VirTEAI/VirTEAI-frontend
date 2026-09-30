@@ -153,4 +153,65 @@ describe('PATCH /api/users/:id', () => {
     const res = await adminAgent.patch(`/api/users/${target.id}`).send({ email: someone.email });
     expect(res.status).toBe(409);
   });
+
+  describe('responsibleTherapistId (Gerenciar Terapeutas)', () => {
+    it('admin vincula um paciente a um terapeuta', async () => {
+      const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+      const { user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+      const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+
+      const res = await adminAgent
+        .patch(`/api/users/${patient.id}`)
+        .send({ responsibleTherapistId: therapist.id });
+      expect(res.status).toBe(200);
+      expect(res.body.user.responsibleTherapistId).toBe(therapist.id);
+    });
+
+    it('admin desvincula um paciente (responsibleTherapistId: null)', async () => {
+      const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+      const { user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+      const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+      await linkPatientToTherapist(patient.id, therapist.id);
+
+      const res = await adminAgent
+        .patch(`/api/users/${patient.id}`)
+        .send({ responsibleTherapistId: null });
+      expect(res.status).toBe(200);
+      expect(res.body.user.responsibleTherapistId).toBeNull();
+    });
+
+    it('terapeuta não pode reatribuir o próprio paciente a outro terapeuta', async () => {
+      const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+      const { user: otherTherapist } = await createLoggedInUser({ role: 'terapeuta' });
+      const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+      await linkPatientToTherapist(patient.id, therapist.id);
+
+      const res = await therapistAgent
+        .patch(`/api/users/${patient.id}`)
+        .send({ responsibleTherapistId: otherTherapist.id });
+      expect(res.status).toBe(403);
+    });
+
+    it('recusa vincular terapeuta a um alvo que não é paciente', async () => {
+      const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+      const { user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+      const { user: anotherTherapist } = await createLoggedInUser({ role: 'terapeuta' });
+
+      const res = await adminAgent
+        .patch(`/api/users/${anotherTherapist.id}`)
+        .send({ responsibleTherapistId: therapist.id });
+      expect(res.status).toBe(400);
+    });
+
+    it('recusa vincular a um id que não é terapeuta', async () => {
+      const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+      const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+      const { user: notATherapist } = await createLoggedInUser({ role: 'paciente' });
+
+      const res = await adminAgent
+        .patch(`/api/users/${patient.id}`)
+        .send({ responsibleTherapistId: notATherapist.id });
+      expect(res.status).toBe(400);
+    });
+  });
 });

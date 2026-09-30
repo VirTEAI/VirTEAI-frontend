@@ -17,6 +17,7 @@ import Dashboard from './pages/Dashboard';
 import DashboardWorld from './pages/DashboardWorld';
 import SessionSummary from './pages/SessionSummary';
 import DashboardAdmin from './pages/DashboardAdmin';
+import AdminTherapists from './pages/AdminTherapists';
 import AccessCodes from './pages/AccessCodes';
 
 function AnimatedRoutes() {
@@ -111,6 +112,16 @@ function AnimatedRoutes() {
             <RequireAuth role="admin">
               <PageTransition>
                 <DashboardAdmin />
+              </PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/terapeutas"
+          element={
+            <RequireAuth role="admin">
+              <PageTransition>
+                <AdminTherapists />
               </PageTransition>
             </RequireAuth>
           }

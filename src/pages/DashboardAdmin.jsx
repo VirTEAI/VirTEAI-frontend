@@ -180,6 +180,37 @@ export default function DashboardAdmin() {
                 <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </motion.button>
+
+            <motion.button
+              variants={fadeInUp}
+              type="button"
+              onClick={() => navigate('/admin/terapeutas')}
+              whileTap={buttonTap}
+              whileHover={buttonHover}
+              className="group flex items-center gap-4 rounded-2xl border border-hairline-soft bg-white p-5 text-left shadow-soft transition-all duration-200 hover:border-brand hover:shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-deep">
+                <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                  <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  <circle cx="17" cy="8" r="2.4" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M15.5 14.2c2.4.3 4 2.1 4 4.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-ink">Gerenciar Terapeutas</span>
+                <span className="block truncate text-[13px] text-ink-secondary">
+                  Veja e vincule quais pacientes cada terapeuta tem
+                </span>
+              </span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-4 w-4 shrink-0 text-ink-tertiary transition-transform duration-200 group-hover:translate-x-0.5"
+              >
+                <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </motion.button>
           </motion.div>
 
           <motion.div
