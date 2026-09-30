@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
@@ -32,13 +33,15 @@ const tests = [
 
 export default function Profile() {
   const { user } = useAuth();
+  const { patientId } = useParams();
   const isOwnProfile = user.role === 'paciente';
 
-  // Terapeuta/admin chegam aqui sem um paciente específico escolhido (não
-  // há, hoje, um link "ver perfil" a partir de "Meus Pacientes") — como
-  // fallback, mostra o primeiro paciente acessível a quem está logado.
+  // Terapeuta/admin chegam aqui com um paciente específico escolhido, vindo
+  // do clique em "Meus Pacientes" (ProfilePsicologo.jsx → /paciente/:id).
+  // Sem id na URL (ex.: link direto sem clique), cai no primeiro paciente
+  // acessível a quem está logado, como fallback.
   const { patients } = usePatients();
-  const targetId = isOwnProfile ? user.id : patients[0]?.id ?? null;
+  const targetId = isOwnProfile ? user.id : patientId ?? patients[0]?.id ?? null;
 
   const [patient, setPatient] = useState(null);
   const [loadError, setLoadError] = useState(false);

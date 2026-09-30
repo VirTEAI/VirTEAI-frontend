@@ -56,7 +56,7 @@ function AnimatedRoutes() {
         />
 
         <Route
-          path="/paciente"
+          path="/paciente/:patientId?"
           element={
             <RequireAuth role={['paciente', 'terapeuta', 'admin']}>
               <PageTransition>

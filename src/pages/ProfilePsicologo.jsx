@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
@@ -17,6 +18,7 @@ const reports = [];
 
 export default function ProfilePsicologo() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isSelf = user.role === 'terapeuta';
 
   // Admin chega aqui sem um terapeuta específico escolhido (não há, hoje,
@@ -200,18 +202,22 @@ export default function ProfilePsicologo() {
                   <div className="flex flex-col gap-4">
                     {patients.map((patient) => (
                       <div key={patient.id} className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/paciente/${patient.id}`)}
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 -m-1 text-left transition-colors duration-200 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
+                        >
                           <SafeImage
                             src={patient.avatar}
                             alt={patient.name}
-                            className="h-[54px] w-[54px] shadow-soft"
+                            className="h-[54px] w-[54px] shrink-0 shadow-soft"
                             rounded
                           />
-                          <div>
-                            <p className="text-[13.5px] text-ink">{patient.name}</p>
-                            <p className="text-[10.3px] text-ink-tertiary">{patient.note}</p>
+                          <div className="min-w-0">
+                            <p className="truncate text-[13.5px] text-ink">{patient.name}</p>
+                            <p className="truncate text-[10.3px] text-ink-tertiary">{patient.note}</p>
                           </div>
-                        </div>
+                        </button>
                         <button
                           type="button"
                           className="shrink-0 rounded-xl border border-hairline px-5 py-1.5 text-[13px] font-medium text-ink transition-colors duration-200 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
