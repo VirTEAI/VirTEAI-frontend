@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gt, lte } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { accessCodes, users, worlds } from '../db/schema.js';
 import { createCodeSchema, validateCodeSchema } from '../lib/code-schemas.js';
@@ -12,6 +12,17 @@ async function findUserById(id) {
 async function findWorldById(id) {
   const [world] = await db.select().from(worlds).where(eq(worlds.id, id)).limit(1);
   return world ?? null;
+}
+
+async function findCodeById(id) {
+  const [row] = await db.select().from(accessCodes).where(eq(accessCodes.id, id)).limit(1);
+  return row ?? null;
+}
+
+// Mesma regra de dono de listCodes: terapeuta só mexe no que ele mesmo
+// gerou, admin em qualquer código.
+function canManageCode(req, code) {
+  return req.userRole === 'admin' || code.generatedById === req.userId;
 }
 
 // "expirado" nunca é gravado no banco — é calculado na leitura, comparando
@@ -153,4 +164,57 @@ export async function validateCode(req, res) {
 
   const patient = await findUserById(updated.patientId);
   return res.json({ code: toPublicCode({ ...updated, patientName: patient?.name }) });
+}
+
+// DELETE /api/codes/:id — apaga um código específico. Terapeuta só pode
+// apagar os que ele mesmo gerou; admin, qualquer um. Apagar o código
+// também apaga (em cascata, accessCodeId é cascade) a sessão registrada a
+// partir dele, se houver.
+export async function deleteCode(req, res) {
+  const code = await findCodeById(req.params.id);
+  if (!code) {
+    return res.status(404).json({ error: 'Código não encontrado.' });
+  }
+  if (!canManageCode(req, code)) {
+    return res.status(403).json({ error: 'Você só pode apagar códigos gerados por você.' });
+  }
+
+  await db.delete(accessCodes).where(eq(accessCodes.id, code.id));
+  return res.status(204).send();
+}
+
+// Mapeia o filtro pedido pelo front pro par (coluna "status" gravada no
+// banco + comparação de `expiresAt`) que define cada grupo — mesma lógica
+// de `deriveStatus` acima, só que em SQL pra poder apagar em massa sem
+// precisar trazer as linhas pro Node primeiro.
+const BULK_SCOPE_CONDITIONS = {
+  // "Pendente"/ativo de verdade: ainda não foi usado e ainda não venceu.
+  pendente: (now) => and(eq(accessCodes.status, 'pendente'), gt(accessCodes.expiresAt, now)),
+  // "Expirado" nunca é um valor gravado em `status` — é "pendente" que já
+  // passou do prazo (ver deriveStatus/comentário em schema.js).
+  expirado: (now) => and(eq(accessCodes.status, 'pendente'), lte(accessCodes.expiresAt, now)),
+  utilizado: () => eq(accessCodes.status, 'utilizado'),
+};
+
+// DELETE /api/codes/bulk?scope=expirado|pendente|utilizado — apaga todos os
+// códigos daquele grupo, escopado ao dono: terapeuta só os que ele gerou,
+// admin todos. Devolve quantos foram apagados pro front confirmar/mostrar.
+export async function bulkDeleteCodes(req, res) {
+  const scope = req.query.scope;
+  const buildCondition = BULK_SCOPE_CONDITIONS[scope];
+  if (!buildCondition) {
+    return res.status(400).json({ error: 'Informe scope=pendente, expirado ou utilizado.' });
+  }
+
+  const conditions = [buildCondition(new Date())];
+  if (req.userRole !== 'admin') {
+    conditions.push(eq(accessCodes.generatedById, req.userId));
+  }
+
+  const deleted = await db
+    .delete(accessCodes)
+    .where(and(...conditions))
+    .returning({ id: accessCodes.id });
+
+  return res.json({ deletedCount: deleted.length });
 }

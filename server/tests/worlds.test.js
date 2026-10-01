@@ -15,10 +15,9 @@ const TINY_PNG = Buffer.from(
 );
 
 beforeEach(async () => {
-  // access_codes referencia worlds com ON DELETE RESTRICT — tem que sumir
-  // primeiro, senão apagar `worlds` falha quando sobrou algum código preso a
-  // um mundo (ex.: o teste de DELETE /api/worlds/:id que deixa um código
-  // gerado de propósito).
+  // access_codes.worldId é onDelete: 'cascade' (era 'restrict' até a Fase
+  // 6), então a ordem já não é obrigatória — mas apaga códigos antes mesmo
+  // assim, só por clareza.
   await db.delete(accessCodes);
   await db.delete(worlds);
   await db.delete(users);
@@ -252,19 +251,40 @@ describe('DELETE /api/worlds/:id', () => {
     expect(after.status).toBe(404);
   });
 
-  it('mundo com código de acesso gerado -> 409, não exclui', async () => {
+  it('mundo com código de acesso gerado -> admin ainda consegue excluir, apagando o(s) código(s) junto (cascade)', async () => {
     const { agent: admin } = await createLoggedInUser({ role: 'admin' });
     const created = await admin.post('/api/worlds').field('title', 'Com Código');
     const { agent: terapeuta, user: terapeutaUser } = await createLoggedInUser({ role: 'terapeuta' });
     const { user: paciente } = await createLoggedInUser({ role: 'paciente' });
     await db.update(users).set({ responsibleTherapistId: terapeutaUser.id }).where(eq(users.id, paciente.id));
 
-    await terapeuta.post('/api/codes').send({ worldId: created.body.world.id, patientId: paciente.id });
+    const codeRes = await terapeuta
+      .post('/api/codes')
+      .send({ worldId: created.body.world.id, patientId: paciente.id });
 
     const res = await admin.delete(`/api/worlds/${created.body.world.id}`);
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(204);
 
     const stillThere = await admin.get(`/api/worlds/${created.body.world.id}`);
-    expect(stillThere.status).toBe(200);
+    expect(stillThere.status).toBe(404);
+
+    // O código gerado pra esse mundo some junto (accessCodes.worldId é
+    // onDelete: 'cascade' desde que o admin pediu pra poder excluir mundo
+    // mesmo com código vinculado).
+    const [codeRow] = await db.select().from(accessCodes).where(eq(accessCodes.id, codeRes.body.code.id));
+    expect(codeRow).toBeUndefined();
+  });
+
+  it('GET /api/worlds (admin) traz linkedCodesCount por mundo', async () => {
+    const { agent: admin } = await createLoggedInUser({ role: 'admin' });
+    const created = await admin.post('/api/worlds').field('title', 'Com Código');
+    const { agent: terapeuta, user: terapeutaUser } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: paciente } = await createLoggedInUser({ role: 'paciente' });
+    await db.update(users).set({ responsibleTherapistId: terapeutaUser.id }).where(eq(users.id, paciente.id));
+    await terapeuta.post('/api/codes').send({ worldId: created.body.world.id, patientId: paciente.id });
+
+    const res = await admin.get('/api/worlds');
+    const world = res.body.worlds.find((w) => w.id === created.body.world.id);
+    expect(world.linkedCodesCount).toBe(1);
   });
 });

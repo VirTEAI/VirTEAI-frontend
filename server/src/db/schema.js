@@ -80,9 +80,15 @@ export const codeStatusEnum = pgEnum('code_status', ['pendente', 'utilizado', 'e
 export const accessCodes = pgTable('access_codes', {
   id: uuid('id').defaultRandom().primaryKey(),
   code: varchar('code', { length: 20 }).notNull().unique(),
+  // `onDelete: 'cascade'` — era `'restrict'` até a Fase 6, mas o admin
+  // pediu pra poder excluir um mundo mesmo com código(s) vinculado(s),
+  // desde que confirme (ver ConfirmModal em AdminWorlds.jsx): excluir o
+  // mundo apaga em cascata os códigos gerados pra ele e, por tabela, as
+  // sessões registradas a partir desses códigos (sessions.accessCodeId já
+  // é cascade também).
   worldId: varchar('world_id', { length: 80 })
     .notNull()
-    .references(() => worlds.id, { onDelete: 'restrict' }),
+    .references(() => worlds.id, { onDelete: 'cascade' }),
   worldTitle: varchar('world_title', { length: 255 }).notNull(),
   patientId: uuid('patient_id')
     .notNull()

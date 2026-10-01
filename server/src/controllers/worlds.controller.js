@@ -1,18 +1,33 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { worlds } from '../db/schema.js';
+import { worlds, accessCodes } from '../db/schema.js';
 import { createWorldSchema, updateWorldSchema } from '../lib/world-schemas.js';
 import { slugify } from '../lib/slug.js';
-
-// Código de erro do Postgres pra violação de foreign key — usado em
-// deleteWorld pra identificar quando o bloqueio vem de access_codes.world_id
-// (onDelete: 'restrict', de propósito: não apaga o histórico de códigos
-// gerados só porque o mundo foi excluído).
-const FK_VIOLATION = '23503';
 
 async function findWorldById(id) {
   const [row] = await db.select().from(worlds).where(eq(worlds.id, id)).limit(1);
   return row ?? null;
+}
+
+// Mapa worldId -> quantidade de códigos gerados, pra admin ver antes de
+// excluir (ver `linkedCodesCount` em toPublicWorld) — excluir o mundo agora
+// apaga esses códigos em cascata (onDelete: 'cascade' em
+// accessCodes.worldId, desde que o admin pediu pra poder excluir mesmo com
+// código vinculado, só avisando antes).
+async function countCodesByWorld() {
+  const rows = await db
+    .select({ worldId: accessCodes.worldId, count: sql`count(*)`.mapWith(Number) })
+    .from(accessCodes)
+    .groupBy(accessCodes.worldId);
+  return new Map(rows.map((r) => [r.worldId, r.count]));
+}
+
+async function countCodesForWorld(worldId) {
+  const [row] = await db
+    .select({ count: sql`count(*)`.mapWith(Number) })
+    .from(accessCodes)
+    .where(eq(accessCodes.worldId, worldId));
+  return row?.count ?? 0;
 }
 
 // Gera um slug único a partir do título — "Ensino Fundamental" -> vira
@@ -34,7 +49,10 @@ function fileUrl(req, filename) {
   return `${req.protocol}://${req.get('host')}/uploads/worlds/${filename}`;
 }
 
-function toPublicWorld(row) {
+// `linkedCodesCount` só é preenchido quando passado explicitamente (admin,
+// nas telas onde isso importa pra avisar antes de excluir) — pra não pagar
+// o custo da query extra em toda chamada de listWorlds/getWorld.
+function toPublicWorld(row, linkedCodesCount) {
   return {
     id: row.id,
     title: row.title,
@@ -46,23 +64,34 @@ function toPublicWorld(row) {
     likes: row.likes,
     views: row.views,
     launchedAt: row.createdAt,
+    ...(linkedCodesCount !== undefined ? { linkedCodesCount } : {}),
   };
 }
 
 // GET /api/worlds — lista mundos (qualquer pessoa logada: paciente navega o
 // dashboard, terapeuta escolhe um mundo pra gerar código, admin gerencia).
 // Mais recentes primeiro. Rascunho (status=draft) só aparece pra admin —
-// pra qualquer outro papel, é como se o mundo ainda não existisse.
+// pra qualquer outro papel, é como se o mundo ainda não existisse. Pra
+// admin, já vem com `linkedCodesCount` por mundo (usado em "Gerenciar
+// Mundos" pra avisar quantos códigos seriam apagados junto antes de
+// excluir).
 export async function listWorlds(req, res) {
-  const rows =
-    req.userRole === 'admin'
-      ? await db.select().from(worlds).orderBy(desc(worlds.createdAt))
-      : await db
-          .select()
-          .from(worlds)
-          .where(eq(worlds.status, 'published'))
-          .orderBy(desc(worlds.createdAt));
-  return res.json({ worlds: rows.map(toPublicWorld) });
+  if (req.userRole === 'admin') {
+    const [rows, codesCountByWorld] = await Promise.all([
+      db.select().from(worlds).orderBy(desc(worlds.createdAt)),
+      countCodesByWorld(),
+    ]);
+    return res.json({
+      worlds: rows.map((row) => toPublicWorld(row, codesCountByWorld.get(row.id) ?? 0)),
+    });
+  }
+
+  const rows = await db
+    .select()
+    .from(worlds)
+    .where(eq(worlds.status, 'published'))
+    .orderBy(desc(worlds.createdAt));
+  return res.json({ worlds: rows.map((row) => toPublicWorld(row)) });
 }
 
 export async function getWorld(req, res) {
@@ -76,7 +105,8 @@ export async function getWorld(req, res) {
   if (row.status === 'draft' && req.userRole !== 'admin') {
     return res.status(404).json({ error: 'Mundo não encontrado.' });
   }
-  return res.json({ world: toPublicWorld(row) });
+  const linkedCodesCount = req.userRole === 'admin' ? await countCodesForWorld(row.id) : undefined;
+  return res.json({ world: toPublicWorld(row, linkedCodesCount) });
 }
 
 // POST /api/worlds — "Vincular Novo Mundo" (admin only). multipart/form-data
@@ -147,28 +177,19 @@ export async function updateWorld(req, res) {
   return res.json({ world: toPublicWorld(updated) });
 }
 
-// DELETE /api/worlds/:id — admin only (checado na rota). Bloqueado pelo
-// próprio banco (FK restrict) se já existir algum código de acesso gerado
-// pra esse mundo — devolve um erro claro em vez de deixar vazar o erro cru
-// do Postgres.
+// DELETE /api/worlds/:id — admin only (checado na rota). Excluir o mundo
+// apaga em cascata qualquer código de acesso gerado pra ele (e, por tabela,
+// as sessões registradas a partir desses códigos — accessCodes.worldId e
+// sessions.accessCodeId são ambos onDelete: 'cascade'). O front avisa isso
+// antes de confirmar (ConfirmModal em AdminWorlds.jsx, usando
+// `linkedCodesCount` de GET /api/worlds) — aqui só executa.
 export async function deleteWorld(req, res) {
   const existing = await findWorldById(req.params.id);
   if (!existing) {
     return res.status(404).json({ error: 'Mundo não encontrado.' });
   }
 
-  try {
-    await db.delete(worlds).where(eq(worlds.id, existing.id));
-  } catch (err) {
-    // node-postgres embrulha o erro original em `cause` (drizzle-orm) — o
-    // código real da violação de FK não vem em `err.code` direto.
-    if (err?.cause?.code === FK_VIOLATION || err?.code === FK_VIOLATION) {
-      return res.status(409).json({
-        error: 'Esse mundo já tem código(s) de acesso gerado(s) — não é possível excluir.',
-      });
-    }
-    throw err;
-  }
+  await db.delete(worlds).where(eq(worlds.id, existing.id));
 
   return res.status(204).send();
 }

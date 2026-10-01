@@ -100,6 +100,8 @@ export default function AdminWorlds() {
                     <p className="truncate text-[12px] text-ink-tertiary">
                       {world.likes} curtida{world.likes === 1 ? '' : 's'} · {world.views} visualizaç
                       {world.views === 1 ? 'ão' : 'ões'}
+                      {world.linkedCodesCount > 0 &&
+                        ` · ${world.linkedCodesCount} código${world.linkedCodesCount === 1 ? '' : 's'} de acesso`}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -150,7 +152,11 @@ export default function AdminWorlds() {
         {deletingWorld && (
           <ConfirmModal
             title="Excluir mundo"
-            message={`Tem certeza que quer excluir "${deletingWorld.title}"? Essa ação não pode ser desfeita. Se já existir algum código de acesso gerado pra esse mundo, a exclusão é bloqueada.`}
+            message={
+              deletingWorld.linkedCodesCount > 0
+                ? `Tem certeza que quer excluir "${deletingWorld.title}"? Esse mundo tem ${deletingWorld.linkedCodesCount} código${deletingWorld.linkedCodesCount === 1 ? '' : 's'} de acesso vinculado${deletingWorld.linkedCodesCount === 1 ? '' : 's'}. Ao excluir, ${deletingWorld.linkedCodesCount === 1 ? 'esse código (e a sessão associada a ele, se houver,)' : 'esses códigos (e as sessões associadas a eles, se houver)'} também ${deletingWorld.linkedCodesCount === 1 ? 'será apagado' : 'serão apagados'} permanentemente. Essa ação não pode ser desfeita.`
+                : `Tem certeza que quer excluir "${deletingWorld.title}"? Essa ação não pode ser desfeita.`
+            }
             confirmLabel="Excluir"
             isSubmitting={isDeleting}
             error={deleteError}

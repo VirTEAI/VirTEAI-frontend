@@ -199,3 +199,114 @@ describe('POST /api/codes/validate', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('DELETE /api/codes/:id', () => {
+  it('terapeuta apaga um código que ele mesmo gerou', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapist.id);
+    const created = await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+
+    const res = await therapistAgent.delete(`/api/codes/${created.body.code.id}`);
+    expect(res.status).toBe(204);
+
+    const [row] = await db.select().from(accessCodes).where(eq(accessCodes.id, created.body.code.id));
+    expect(row).toBeUndefined();
+  });
+
+  it('terapeuta não pode apagar código gerado por outro terapeuta (403)', async () => {
+    const { agent: therapistAAgent, user: therapistA } = await createLoggedInUser({ role: 'terapeuta' });
+    const { agent: therapistBAgent } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapistA.id);
+    const created = await therapistAAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+
+    const res = await therapistBAgent.delete(`/api/codes/${created.body.code.id}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('admin apaga qualquer código', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapist.id);
+    const created = await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+
+    const res = await adminAgent.delete(`/api/codes/${created.body.code.id}`);
+    expect(res.status).toBe(204);
+  });
+
+  it('código inexistente -> 404', async () => {
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const res = await adminAgent.delete('/api/codes/00000000-0000-0000-0000-000000000000');
+    expect(res.status).toBe(404);
+  });
+
+  it('paciente não pode apagar código (403, role não permitida na rota)', async () => {
+    const { agent: patientAgent } = await createLoggedInUser({ role: 'paciente' });
+    const res = await patientAgent.delete('/api/codes/00000000-0000-0000-0000-000000000000');
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('DELETE /api/codes/bulk', () => {
+  it('scope ausente/ inválido -> 400', async () => {
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const res = await adminAgent.delete('/api/codes/bulk');
+    expect(res.status).toBe(400);
+  });
+
+  it('scope=expirado apaga só os pendentes já vencidos, escopado ao terapeuta', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapist.id);
+
+    const pending = await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+    const expired = await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+    await db
+      .update(accessCodes)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(accessCodes.id, expired.body.code.id));
+
+    const res = await therapistAgent.delete('/api/codes/bulk?scope=expirado');
+    expect(res.status).toBe(200);
+    expect(res.body.deletedCount).toBe(1);
+
+    const remaining = await therapistAgent.get('/api/codes');
+    expect(remaining.body.codes.map((c) => c.id)).toEqual([pending.body.code.id]);
+  });
+
+  it('scope=pendente apaga só os ainda válidos (não mexe em utilizado/expirado)', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { agent: patientAgent, user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapist.id);
+
+    await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+    const used = await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+    await patientAgent.post('/api/codes/validate').send({ code: used.body.code.code });
+
+    const res = await therapistAgent.delete('/api/codes/bulk?scope=pendente');
+    expect(res.status).toBe(200);
+    expect(res.body.deletedCount).toBe(1);
+
+    const remaining = await therapistAgent.get('/api/codes');
+    expect(remaining.body.codes.map((c) => c.id)).toEqual([used.body.code.id]);
+  });
+
+  it('admin apagando em massa pega de todos os terapeutas', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapist.id);
+
+    const expired = await therapistAgent.post('/api/codes').send({ ...WORLD, patientId: patient.id });
+    await db
+      .update(accessCodes)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(accessCodes.id, expired.body.code.id));
+
+    const res = await adminAgent.delete('/api/codes/bulk?scope=expirado');
+    expect(res.status).toBe(200);
+    expect(res.body.deletedCount).toBe(1);
+  });
+});

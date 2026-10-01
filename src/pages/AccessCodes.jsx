@@ -3,9 +3,20 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
+import ConfirmModal from '../components/ConfirmModal';
 import { apiFetch } from '../lib/api-client';
 import { fadeInUp } from '../lib/motion';
 import { SearchIcon } from '../components/icons';
+
+// Rótulo + mensagem de confirmação de cada grupo que dá pra apagar em
+// massa — "ativos" (pedido do admin) é o mesmo grupo que aparece como
+// "Pendente" na lista (ainda não usado, ainda não venceu); "expirado" nunca
+// fica gravado no banco, é "pendente" que já passou do prazo (mesma conta
+// de deriveStatus no backend).
+const BULK_SCOPES = {
+  pendente: { label: 'Apagar pendentes (ativos)', noun: 'código pendente', nounPlural: 'códigos pendentes' },
+  expirado: { label: 'Apagar expirados', noun: 'código expirado', nounPlural: 'códigos expirados' },
+};
 
 function formatGeneratedAt(isoDate) {
   return new Intl.DateTimeFormat('pt-BR', {
@@ -53,6 +64,14 @@ export default function AccessCodes() {
   const [codes, setCodes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [deletingCode, setDeletingCode] = useState(null);
+  const [isDeletingCode, setIsDeletingCode] = useState(false);
+  const [deleteCodeError, setDeleteCodeError] = useState('');
+
+  const [bulkScope, setBulkScope] = useState(null); // null | 'pendente' | 'expirado'
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkError, setBulkError] = useState('');
+
   useEffect(() => {
     let cancelled = false;
     apiFetch('/api/codes').then(({ ok, body }) => {
@@ -75,6 +94,47 @@ export default function AccessCodes() {
         entry.worldTitle.toLowerCase().includes(term)
     );
   }, [codes, search]);
+
+  // Contagem por grupo pra mostrar nos botões de apagar em massa e decidir
+  // se eles aparecem — calculado local (o `status` que já vem de
+  // GET /api/codes é o derivado, mesma regra do backend).
+  const bulkCounts = useMemo(
+    () => ({
+      pendente: codes.filter((c) => c.status === 'pendente').length,
+      expirado: codes.filter((c) => c.status === 'expirado').length,
+    }),
+    [codes]
+  );
+
+  async function handleDeleteCode() {
+    setDeleteCodeError('');
+    setIsDeletingCode(true);
+    const { ok, body } = await apiFetch(`/api/codes/${deletingCode.id}`, { method: 'DELETE' });
+    setIsDeletingCode(false);
+    if (!ok) {
+      setDeleteCodeError(body?.error ?? 'Não foi possível apagar esse código.');
+      return;
+    }
+    setCodes((prev) => prev.filter((c) => c.id !== deletingCode.id));
+    setDeletingCode(null);
+  }
+
+  async function handleBulkDelete() {
+    setBulkError('');
+    setIsBulkDeleting(true);
+    const { ok, body } = await apiFetch(`/api/codes/bulk?scope=${bulkScope}`, { method: 'DELETE' });
+    setIsBulkDeleting(false);
+    if (!ok) {
+      setBulkError(body?.error ?? 'Não foi possível apagar esses códigos.');
+      return;
+    }
+    // Recarrega do servidor em vez de filtrar local — o backend já aplicou
+    // o escopo de dono (terapeuta só apaga o que ele gerou), então é a
+    // fonte confiável de quais códigos realmente saíram.
+    const { ok: refetchOk, body: refetchBody } = await apiFetch('/api/codes');
+    if (refetchOk) setCodes(refetchBody.codes);
+    setBulkScope(null);
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -100,6 +160,41 @@ export default function AccessCodes() {
               />
             </div>
           </motion.div>
+
+          {(bulkCounts.pendente > 0 || bulkCounts.expirado > 0) && (
+            <motion.div
+              variants={fadeInUp}
+              initial="hidden"
+              animate="show"
+              className="mb-6 flex flex-wrap items-center gap-2"
+            >
+              <span className="text-[13px] text-ink-secondary">Apagar em massa:</span>
+              {bulkCounts.expirado > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkError('');
+                    setBulkScope('expirado');
+                  }}
+                  className="rounded-lg border border-hairline px-3 py-1.5 text-[12px] font-medium text-danger transition-colors duration-200 hover:bg-danger-soft focus:outline-none focus:ring-2 focus:ring-brand"
+                >
+                  Apagar expirados ({bulkCounts.expirado})
+                </button>
+              )}
+              {bulkCounts.pendente > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkError('');
+                    setBulkScope('pendente');
+                  }}
+                  className="rounded-lg border border-hairline px-3 py-1.5 text-[12px] font-medium text-danger transition-colors duration-200 hover:bg-danger-soft focus:outline-none focus:ring-2 focus:ring-brand"
+                >
+                  Apagar pendentes/ativos ({bulkCounts.pendente})
+                </button>
+              )}
+            </motion.div>
+          )}
 
           {isLoading ? (
             <motion.div
@@ -168,6 +263,17 @@ export default function AccessCodes() {
                             Ver resumo
                           </Link>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteCodeError('');
+                            setDeletingCode(entry);
+                          }}
+                          aria-label={`Apagar código ${entry.code}`}
+                          className="inline-flex shrink-0 items-center justify-center rounded-xl border border-hairline px-3 py-1.5 text-[12px] font-medium text-danger transition-colors duration-200 hover:border-danger hover:bg-danger-soft focus:outline-none focus:ring-2 focus:ring-brand"
+                        >
+                          Excluir
+                        </button>
                       </div>
                     </motion.div>
                   );
@@ -180,6 +286,38 @@ export default function AccessCodes() {
       </main>
 
       <Footer />
+
+      <AnimatePresence>
+        {deletingCode && (
+          <ConfirmModal
+            title="Excluir código"
+            message={`Tem certeza que quer apagar o código "${deletingCode.code}" (${deletingCode.worldTitle} — ${deletingCode.patientName ?? 'paciente removido'})? Se esse código já tiver uma sessão registrada, ela também será apagada. Essa ação não pode ser desfeita.`}
+            confirmLabel="Excluir"
+            isSubmitting={isDeletingCode}
+            error={deleteCodeError}
+            onConfirm={handleDeleteCode}
+            onClose={() => setDeletingCode(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {bulkScope && (
+          <ConfirmModal
+            title={BULK_SCOPES[bulkScope].label}
+            message={`Tem certeza que quer apagar ${
+              bulkCounts[bulkScope] === 1
+                ? `o ${bulkCounts[bulkScope]} ${BULK_SCOPES[bulkScope].noun}`
+                : `todos os ${bulkCounts[bulkScope]} ${BULK_SCOPES[bulkScope].nounPlural}`
+            }? Sessões registradas a partir desses códigos também serão apagadas. Essa ação não pode ser desfeita.`}
+            confirmLabel="Apagar"
+            isSubmitting={isBulkDeleting}
+            error={bulkError}
+            onConfirm={handleBulkDelete}
+            onClose={() => setBulkScope(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
