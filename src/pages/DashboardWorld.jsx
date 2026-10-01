@@ -18,9 +18,8 @@ function formatLaunchedAt(isoDate) {
   );
 }
 
-const imgAvatarComment =
-  'https://www.figma.com/api/mcp/asset/c0d9bce9-7097-450a-806f-d374e7b2c1e0.png';
-
+// Sem avatar próprio aqui — todo mundo sem foto usa o ícone de usuário
+// genérico (SafeImage cuida disso sozinho quando `avatar` é null).
 const comments = [{ author: 'Fabricia Santos', text: 'Simplesmente muito bom!! minha paciente adorou' }];
 
 export default function DashboardWorld() {
@@ -151,7 +150,7 @@ export default function DashboardWorld() {
                 {comments.map((comment, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <SafeImage
-                      src={imgAvatarComment}
+                      src={null}
                       alt={comment.author}
                       className="h-[37px] w-[37px]"
                       rounded

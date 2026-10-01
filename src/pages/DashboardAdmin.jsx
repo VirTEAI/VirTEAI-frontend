@@ -10,22 +10,20 @@ import VincularMundoModal from '../components/VincularMundoModal';
 import NotificationsModal from '../components/NotificationsModal';
 import { useWorlds } from '../hooks/useWorlds';
 import { fadeInUp, staggerContainer, buttonTap, buttonHover } from '../lib/motion';
-
-const imgBanner = 'https://www.figma.com/api/mcp/asset/9e1de782-9774-4f61-a3d9-959e6065f598.png';
-
-const imgAvatar1 = 'https://www.figma.com/api/mcp/asset/c15449d4-ecda-46f1-a4fb-88af275d9ced.png';
-const imgAvatar2 = 'https://www.figma.com/api/mcp/asset/712ca6ee-ac4e-41bb-9f70-16e61959a741.png';
-const imgAvatar3 = 'https://www.figma.com/api/mcp/asset/8e6fafcd-2306-4df1-be3e-1def1ee9cff4.png';
+// Mesmo banner "Mundo em destaque" usado no dashboard do paciente/terapeuta
+// — não recebemos uma arte separada pra essa tela (ver PENDENTES.md).
+import imgBanner from '../assets/images/dashboard-banner.png';
 
 // Dados mockados — em produção viriam da API (mundos em rascunho, solicitações
 // de terapeutas pendentes de aprovação). Comentário deixado a pedido, já que
-// dados reais serão conectados depois.
+// dados reais serão conectados depois. Sem `avatar` — todo mundo sem foto
+// própria usa o ícone de usuário genérico (SafeImage cuida disso sozinho).
 const initialDrafts = [{ id: 'draft-1', title: 'Untitled' }];
 
 const initialRequests = [
-  { id: 'req-1', name: 'Ana Clara Souza', email: 'ana.souza@email.com', avatar: imgAvatar1 },
-  { id: 'req-2', name: 'Carlos Eduardo Lima', email: 'carlos.eduardo@email.com', avatar: imgAvatar2 },
-  { id: 'req-3', name: 'Mariana Ferreira', email: 'mariana.ferreira@email.com', avatar: imgAvatar3 },
+  { id: 'req-1', name: 'Ana Clara Souza', email: 'ana.souza@email.com', avatar: null },
+  { id: 'req-2', name: 'Carlos Eduardo Lima', email: 'carlos.eduardo@email.com', avatar: null },
+  { id: 'req-3', name: 'Mariana Ferreira', email: 'mariana.ferreira@email.com', avatar: null },
 ];
 
 export default function DashboardAdmin() {

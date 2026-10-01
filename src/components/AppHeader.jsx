@@ -6,12 +6,7 @@ import SafeImage from './SafeImage';
 import { BellIcon } from './icons';
 import { useAuth } from '../context/AuthContext';
 import { mobileMenu, buttonTap } from '../lib/motion';
-
-// Logo real ainda pendente de exportação no Figma (ver DEPLOY.md/aviso no
-// chat) — enquanto isso, SafeImage evita que o link quebrado estoure o
-// layout.
-const imgLogo =
-  'https://www.figma.com/api/mcp/asset/5b06928c-fe00-4658-a0e0-4f6050128a7f.png';
+import imgLogo from '../assets/images/logo.png';
 
 const navLinkClass = ({ isActive }) =>
   `text-[14.8px] leading-normal transition-colors duration-200 ${

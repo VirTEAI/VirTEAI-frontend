@@ -1,11 +1,7 @@
 import SafeImage from './SafeImage';
 import { WaveDivider } from './icons';
 import { useAuth } from '../context/AuthContext';
-
-// Logo real ainda pendente de exportação no Figma — SafeImage evita que o
-// link quebrado estoure o layout enquanto isso.
-const imgLogo =
-  'https://www.figma.com/api/mcp/asset/5b06928c-fe00-4658-a0e0-4f6050128a7f.png';
+import imgLogo from '../assets/images/logo.png';
 
 export default function Footer() {
   // "Entrar" só faz sentido pra quem ainda não tem sessão — mostrar esse

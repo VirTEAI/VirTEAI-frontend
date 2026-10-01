@@ -3,13 +3,11 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { WaveDivider } from '../components/icons';
 import { fadeInUp, staggerContainer, staggerItem, easeOut } from '../lib/motion';
-
-const imgLogoMark =
-  'https://www.figma.com/api/mcp/asset/9e7e8585-604c-4caf-8234-5f4f50230817.png';
-const imgRocket =
-  'https://www.figma.com/api/mcp/asset/747f4d62-a3f1-4585-8760-3109a1b365e2.png';
-const imgColabLogo =
-  'https://www.figma.com/api/mcp/asset/c1c59a1d-66d3-4437-a550-2f74b8570e14.png';
+import imgLogoMark from '../assets/images/sobre-marca.png';
+import imgRocket from '../assets/images/sobre-foguete.png';
+// Mesmo logo de parceiro usado na Home — não recebemos um arquivo
+// separado pra essa página (ver PENDENTES.md), e é a mesma instituição.
+import imgColabLogo from '../assets/images/home-parceiro.png';
 
 const team = [1, 2, 3, 4, 5, 6];
 

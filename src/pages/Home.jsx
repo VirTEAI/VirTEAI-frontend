@@ -5,13 +5,14 @@ import Header from '../components/Header';
 import { FootprintsIcon } from '../components/icons';
 import Footer from '../components/Footer';
 import { fadeInUp, fadeIn, staggerContainer, staggerItem, easeOut, buttonTap, buttonHover } from '../lib/motion';
-
-const imgHeroMain =
-  'https://www.figma.com/api/mcp/asset/46340bfd-ba83-4bf8-be15-f5d6301ead3d.png';
-const imgHeroLeft =
-  'https://www.figma.com/api/mcp/asset/bc3aa6fe-d622-4cd4-8fa7-b0e35a6ed624.png';
-const imgHeroRight =
-  'https://www.figma.com/api/mcp/asset/e0cdbc81-d8c4-4562-96fe-818a784245f2.png';
+import imgHeroMain from '../assets/images/home-hero-center.png';
+import imgHeroLeft from '../assets/images/home-hero-left.png';
+import imgHeroRight from '../assets/images/home-hero-right.png';
+import imgFamilia from '../assets/images/home-familia.png';
+import imgMundo1 from '../assets/images/home-mundo-cidade.png';
+import imgMundo2 from '../assets/images/home-mundo-floresta.png';
+import imgMundo3 from '../assets/images/home-mundo-mercado.png';
+import imgColabLogo from '../assets/images/home-parceiro.png';
 
 // As 3 fotos do hero já existiam no Figma como um "tríptico" decorativo (uma
 // central nítida + duas laterais desfocadas, sempre as mesmas). Os 3 pontinhos
@@ -22,17 +23,6 @@ const imgHeroRight =
 const HERO_SLIDES = [imgHeroLeft, imgHeroMain, imgHeroRight];
 const HERO_INTERVAL_MS = 6000;
 const heroAlt = 'Pessoa utilizando óculos de realidade virtual VirTEAI';
-
-const imgFamilia =
-  'https://www.figma.com/api/mcp/asset/3113f797-f9d1-45ff-a8d1-7e2c5b4c7ea8.png';
-const imgMundo1 =
-  'https://www.figma.com/api/mcp/asset/079e7198-5b14-4231-bd81-9ad2dac10074.png';
-const imgMundo2 =
-  'https://www.figma.com/api/mcp/asset/6d3dff04-f746-4805-80fa-77bc18edacbe.png';
-const imgMundo3 =
-  'https://www.figma.com/api/mcp/asset/952aa373-7ddb-4813-9c25-ee6c0f7fc115.png';
-const imgColabLogo =
-  'https://www.figma.com/api/mcp/asset/04cd15e4-5f48-4cf1-a2ba-e3db7df917fc.png';
 
 export default function Home() {
   const [heroIndex, setHeroIndex] = useState(0);

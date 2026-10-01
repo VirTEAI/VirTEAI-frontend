@@ -10,8 +10,7 @@ import { SearchIcon } from '../components/icons';
 import { useAuth } from '../context/AuthContext';
 import { useWorlds } from '../hooks/useWorlds';
 import { fadeInUp, staggerContainer } from '../lib/motion';
-
-const imgBanner = 'https://www.figma.com/api/mcp/asset/a270abd0-53e8-4503-bcbe-b534e957e797.png';
+import imgBanner from '../assets/images/dashboard-banner.png';
 
 const ROLE_LABEL = {
   paciente: 'Pronto para a sessão de hoje?',

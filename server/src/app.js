@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -54,6 +55,13 @@ export function createApp() {
   // em teste via env), não um caminho fixo — senão os testes de upload
   // gravam num lugar e o servidor tenta servir de outro.
   app.use('/uploads/worlds', express.static(UPLOAD_DIR));
+
+  // Imagens fixas do projeto (logo etc. já viraram arquivo local do front —
+  // ver src/assets/images/ — mas as 2 imagens de mundo semeadas por
+  // db:seed precisam de uma URL de verdade pro front buscar, já que vivem
+  // no banco como texto, não dentro do bundle do Vite). Fica versionado no
+  // git (server/assets/), diferente de UPLOAD_DIR acima que é só runtime.
+  app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
 
   app.get('/api/health', (req, res) => {
     res.json({ ok: true, service: 'virteai-server' });

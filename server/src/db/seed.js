@@ -9,11 +9,35 @@
 //
 // Rodar com: npm run db:seed (idempotente — pula quem já existe)
 import 'dotenv/config';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db, pool } from './client.js';
 import { users, accessCodes, worlds, sessions, sessionAreas } from './schema.js';
 import { hashPassword } from '../lib/password.js';
 import { CODE_TTL_MS } from '../lib/code-generator.js';
+
+// URL pública de um arquivo em server/assets/ (versionado no git — ver
+// app.js). Usa RENDER_EXTERNAL_URL (que o Render preenche sozinho em todo
+// serviço web, sem precisar configurar nada manualmente) quando não há um
+// SERVER_PUBLIC_URL explícito; em dev local cai em localhost.
+function assetUrl(relPath) {
+  const base =
+    process.env.SERVER_PUBLIC_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    `http://localhost:${process.env.PORT || 4000}`;
+  return `${base.replace(/\/$/, '')}/assets/${relPath}`;
+}
+
+// Todo usuário sem avatar próprio usa o mesmo ícone genérico — decisão do
+// projeto (ver SafeImage.jsx), não precisa de link nenhum pra isso.
+const DEMO_EMAILS = [
+  'admin@virteai.com',
+  'terapeuta@virteai.com',
+  'paciente@virteai.com',
+  'murillo.fernandes@demo.virteai.com',
+  'henrique.ferraz@demo.virteai.com',
+  'fabricia.santos@demo.virteai.com',
+  'ana.lima@demo.virteai.com',
+];
 
 async function findByEmail(email) {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -110,7 +134,6 @@ async function seed() {
     email: 'admin@virteai.com',
     password: 'admin123',
     role: 'admin',
-    avatar: 'https://www.figma.com/api/mcp/asset/c15449d4-ecda-46f1-a4fb-88af275d9ced.png',
   });
 
   const therapist = await ensureUser({
@@ -118,7 +141,6 @@ async function seed() {
     email: 'terapeuta@virteai.com',
     password: 'terapeuta123',
     role: 'terapeuta',
-    avatar: 'https://www.figma.com/api/mcp/asset/3fcb7fdc-f13c-4fd0-8b45-aa0f68e0027d.png',
     birthDate: '28/06/1993',
     professionalId: '407821',
   });
@@ -130,7 +152,6 @@ async function seed() {
     email: 'paciente@virteai.com',
     password: 'paciente123',
     role: 'paciente',
-    avatar: 'https://www.figma.com/api/mcp/asset/950035b0-18d4-49f9-8c4f-b28173a05df6.png',
     birthDate: '20/04/1999',
     note: 'Acompanhamento de TEA — testes AQ-10 e AQ-50',
     responsibleTherapistId: therapist.id,
@@ -144,25 +165,21 @@ async function seed() {
       name: 'Murillo Fernandes',
       email: 'murillo.fernandes@demo.virteai.com',
       note: 'Tratamento de Hiperatividade relacionada a carros',
-      avatar: 'https://www.figma.com/api/mcp/asset/bd8f1fad-f40d-4f16-bdeb-42b78e29960f.png',
     },
     {
       name: 'Henrique de Ferraz',
       email: 'henrique.ferraz@demo.virteai.com',
       note: 'Tratamento de Hiperatividade relacionada a carros',
-      avatar: 'https://www.figma.com/api/mcp/asset/87373dcf-8ea2-421f-a4f7-b397f86daa2a.png',
     },
     {
       name: 'Fabricia Santos',
       email: 'fabricia.santos@demo.virteai.com',
       note: 'Acompanhamento de rotina social',
-      avatar: 'https://www.figma.com/api/mcp/asset/c0d9bce9-7097-450a-806f-d374e7b2c1e0.png',
     },
     {
       name: 'Ana Beatriz Lima',
       email: 'ana.lima@demo.virteai.com',
       note: 'Terapia de comunicação alternativa',
-      avatar: 'https://www.figma.com/api/mcp/asset/7281e4f0-0dc9-46e6-a8cd-4761a5b04a53.png',
     },
   ];
 
@@ -178,19 +195,21 @@ async function seed() {
   }
 
   // Os 2 mundos que antes viviam só em src/data/worlds.js — mesmo id (slug),
-  // título, descrição e imagens de sempre, agora como registros reais no
-  // banco (Fase 4). `createdById` aponta pro admin, já que é quem usa o
-  // formulário "Vincular Novo Mundo" pra criar mundos de verdade.
-  const imgThumb = 'https://www.figma.com/api/mcp/asset/a762546b-8c98-4320-bb31-8097acb62d1a.png';
-  const imgGallery = 'https://www.figma.com/api/mcp/asset/d660efc7-26a5-4680-9a7a-6c1e2806f730.png';
+  // título e descrição de sempre, agora como registros reais no banco
+  // (Fase 4). `createdById` aponta pro admin, já que é quem usa o
+  // formulário "Vincular Novo Mundo" pra criar mundos de verdade. Cada
+  // mundo tem sua própria foto de verdade agora (server/assets/worlds/),
+  // em vez de reaproveitar a mesma imagem genérica nos dois.
+  const imgHome = assetUrl('worlds/mundo-home.png');
+  const imgEnsino = assetUrl('worlds/mundo-ensino.png');
 
   await ensureWorld({
     id: 'home',
     title: 'Home',
     description:
       'Um espaço de boas-vindas para os pacientes explorarem antes de escolher o mundo do dia — um ambiente calmo, pensado para reduzir a ansiedade de início de sessão.',
-    thumbnail: imgThumb,
-    gallery: imgThumb,
+    thumbnail: imgHome,
+    gallery: imgHome,
     likes: 17,
     views: 20,
     createdById: admin.id,
@@ -201,12 +220,28 @@ async function seed() {
     title: 'Ensino Fundamental',
     description:
       'Explore uma escola de ensino fundamental totalmente interativa, criada para transformar o aprendizado em uma grande aventura. Caminhe por salas de aula, biblioteca, refeitório, quadra esportiva e pátio enquanto realiza desafios e descobre novas atividades. Cada ambiente foi desenvolvido para estimular a exploração, a autonomia e o desenvolvimento de habilidades importantes para crianças com Transtorno do Espectro Autista (TEA), oferecendo uma experiência divertida, acolhedora e segura, onde aprender faz parte da brincadeira.',
-    thumbnail: imgThumb,
-    gallery: imgGallery,
+    thumbnail: imgEnsino,
+    gallery: imgEnsino,
     likes: 17,
     views: 20,
     createdById: admin.id,
   });
+
+  // `ensureUser`/`ensureWorld` só criam quem ainda não existe — então, pra
+  // quem já tinha rodado o seed antes (com os links antigos do Figma como
+  // avatar/thumbnail/gallery), essas 2 atualizações forçadas garantem que a
+  // correção chega mesmo numa base já semeada, sem precisar apagar nada.
+  // Só mexe nas contas/mundos de demonstração conhecidos (listas acima),
+  // nunca em dado real de um usuário de verdade.
+  await db.update(users).set({ avatar: null }).where(inArray(users.email, DEMO_EMAILS));
+  await db
+    .update(worlds)
+    .set({ thumbnail: imgHome, gallery: imgHome })
+    .where(eq(worlds.id, 'home'));
+  await db
+    .update(worlds)
+    .set({ thumbnail: imgEnsino, gallery: imgEnsino })
+    .where(eq(worlds.id, 'ensino-fundamental'));
 
   // Códigos de exemplo — um de cada status, pra tela /codigos mostrar algo
   // reconhecível assim que a base é criada (Fase 3).
