@@ -12,7 +12,10 @@ import imgFamilia from '../assets/images/home-familia.png';
 import imgMundo1 from '../assets/images/home-mundo-cidade.png';
 import imgMundo2 from '../assets/images/home-mundo-floresta.png';
 import imgMundo3 from '../assets/images/home-mundo-mercado.png';
-import imgColabLogo from '../assets/images/home-parceiro.png';
+// A seção "Instituições parceiras" reaproveita a nossa própria logo em vez
+// de um logo de parceiro externo (decisão do projeto — ver comentário em
+// AboutUs.jsx pro mesmo caso).
+import imgColabLogo from '../assets/images/logo.png';
 
 // As 3 fotos do hero já existiam no Figma como um "tríptico" decorativo (uma
 // central nítida + duas laterais desfocadas, sempre as mesmas). Os 3 pontinhos
@@ -316,7 +319,7 @@ export default function Home() {
           <p className="text-[15px] font-medium text-ink-tertiary">
             Instituições que confiam na VirTEAI
           </p>
-          <img src={imgColabLogo} alt="Instituição parceira" className="h-[86px] w-[91px] object-contain opacity-90" />
+          <img src={imgColabLogo} alt="VirTEAI" className="h-[64px] w-[150px] object-contain opacity-90" />
         </motion.section>
       </main>
 

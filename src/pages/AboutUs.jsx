@@ -5,9 +5,9 @@ import { WaveDivider } from '../components/icons';
 import { fadeInUp, staggerContainer, staggerItem, easeOut } from '../lib/motion';
 import imgLogoMark from '../assets/images/sobre-marca.png';
 import imgRocket from '../assets/images/sobre-foguete.png';
-// Mesmo logo de parceiro usado na Home — não recebemos um arquivo
-// separado pra essa página (ver PENDENTES.md), e é a mesma instituição.
-import imgColabLogo from '../assets/images/home-parceiro.png';
+// A seção "Instituições parceiras" reaproveita a nossa própria logo em vez
+// de um logo de parceiro externo (decisão do projeto).
+import imgColabLogo from '../assets/images/logo.png';
 
 const team = [1, 2, 3, 4, 5, 6];
 
@@ -139,8 +139,8 @@ export default function AboutUs() {
             viewport={{ once: true, amount: 0.6 }}
             transition={{ duration: 0.5, ease: easeOut }}
             src={imgColabLogo}
-            alt="Instituição parceira"
-            className="h-[86px] w-[91px] object-contain opacity-90"
+            alt="VirTEAI"
+            className="h-[64px] w-[150px] object-contain opacity-90"
           />
         </section>
       </main>
