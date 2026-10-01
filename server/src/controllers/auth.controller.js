@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { users } from '../db/schema.js';
+import { users, registrationRequests } from '../db/schema.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { setSessionCookie, clearSessionCookie } from '../lib/session-cookie.js';
 import { toPublicUser } from '../lib/public-user.js';
 import {
-  registerSchema,
+  registerRequestSchema,
   loginSchema,
   forgotPasswordSchema,
   verifyResetCodeSchema,
@@ -13,26 +13,38 @@ import {
 } from '../lib/auth-schemas.js';
 import { setResetEntry, getResetEntry, clearResetEntry, createResetCode, ttlMs } from '../lib/reset-store.js';
 
+// A tela pública "Cadastrar" (Register.jsx) não cria conta na hora — ela
+// registra um PEDIDO (status 'pendente') que só vira conta de verdade
+// quando um admin aprova (ver registration-requests.controller.js). Por
+// isso aqui não loga ninguém (sem cookie de sessão) e não devolve `user`
+// nenhum, só a confirmação de que o pedido foi recebido.
 export async function register(req, res) {
-  const parsed = registerSchema.safeParse(req.body);
+  const parsed = registerRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: 'Dados inválidos.', details: parsed.error.flatten() });
   }
-  const { name, email, password, role, avatar } = parsed.data;
+  const { name, email, password } = parsed.data;
 
-  const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-  if (existing) {
+  const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+  if (existingUser) {
     return res.status(409).json({ error: 'Já existe uma conta com esse e-mail.' });
   }
 
-  const passwordHash = await hashPassword(password);
-  const [created] = await db
-    .insert(users)
-    .values({ name, email, passwordHash, role, avatar })
-    .returning();
+  const [existingRequest] = await db
+    .select({ id: registrationRequests.id })
+    .from(registrationRequests)
+    .where(and(eq(registrationRequests.email, email), eq(registrationRequests.status, 'pendente')))
+    .limit(1);
+  if (existingRequest) {
+    return res.status(409).json({ error: 'Já existe um pedido de cadastro pendente com esse e-mail.' });
+  }
 
-  setSessionCookie(res, created);
-  return res.status(201).json({ user: toPublicUser(created) });
+  const passwordHash = await hashPassword(password);
+  await db.insert(registrationRequests).values({ name, email, passwordHash, role: 'terapeuta' });
+
+  return res.status(201).json({
+    message: 'Pedido enviado! Um administrador vai revisar seus dados antes de liberar o acesso.',
+  });
 }
 
 export async function login(req, res) {

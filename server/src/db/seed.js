@@ -9,9 +9,9 @@
 //
 // Rodar com: npm run db:seed (idempotente — pula quem já existe)
 import 'dotenv/config';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db, pool } from './client.js';
-import { users, accessCodes, worlds, sessions, sessionAreas } from './schema.js';
+import { users, accessCodes, worlds, sessions, sessionAreas, registrationRequests } from './schema.js';
 import { hashPassword } from '../lib/password.js';
 import { CODE_TTL_MS } from '../lib/code-generator.js';
 
@@ -69,6 +69,30 @@ async function ensureWorld({ id, ...rest }) {
   }
   const [created] = await db.insert(worlds).values({ id, ...rest }).returning();
   console.log(`+ mundo criado: ${id}`);
+  return created;
+}
+
+async function findPendingRequestByEmail(email) {
+  const [row] = await db
+    .select()
+    .from(registrationRequests)
+    .where(and(eq(registrationRequests.email, email), eq(registrationRequests.status, 'pendente')))
+    .limit(1);
+  return row ?? null;
+}
+
+// Mesma ideia do `ensureUser`: só cria se ainda não tiver um pedido
+// pendente desse e-mail. Senha com hash igual a um pedido de verdade
+// teria — ninguém loga com ela até um admin aprovar.
+async function ensureRegistrationRequest({ name, email, password, role = 'terapeuta' }) {
+  const existing = await findPendingRequestByEmail(email);
+  if (existing) {
+    console.log(`- pedido de cadastro já existe: ${email}`);
+    return existing;
+  }
+  const passwordHash = await hashPassword(password);
+  const [created] = await db.insert(registrationRequests).values({ name, email, passwordHash, role }).returning();
+  console.log(`+ pedido de cadastro criado: ${email}`);
   return created;
 }
 
@@ -298,6 +322,19 @@ async function seed() {
     expiresAt: new Date(now - 24 * 60 * 60 * 1000), // expirou ontem
     usedAt: null,
   });
+
+  // Pedidos de cadastro de exemplo — mesmos nomes que já viviam mockados em
+  // DashboardAdmin.jsx (initialRequests), agora como linhas de verdade em
+  // 'pendente', pra tela de notificações do admin não ficar vazia numa base
+  // recém-criada.
+  const SAMPLE_REQUESTS = [
+    { name: 'Ana Clara Souza', email: 'ana.souza@email.com', password: 'pedido123' },
+    { name: 'Carlos Eduardo Lima', email: 'carlos.eduardo@email.com', password: 'pedido123' },
+    { name: 'Mariana Ferreira', email: 'mariana.ferreira@email.com', password: 'pedido123' },
+  ];
+  for (const request of SAMPLE_REQUESTS) {
+    await ensureRegistrationRequest(request);
+  }
 
   return { admin, therapist };
 }

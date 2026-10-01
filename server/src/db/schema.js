@@ -39,6 +39,38 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Pedido de cadastro — a tela pública "Cadastrar" (Register.jsx) não cria
+// mais conta direto: só grava um pedido aqui (com a senha já com hash, pra
+// não pedir de novo depois), e fica 'pendente' até um admin revisar no
+// painel (Painel Admin → sininho de notificações). Só então (approve)
+// nasce a linha de verdade em `users`, com a mesma senha que a pessoa
+// escolheu no formulário. 'rejeitado' fica registrado (não apaga a linha)
+// pra manter histórico de quem já foi avaliado; só 'pendente' bloqueia um
+// novo pedido com o mesmo e-mail (ver auth.controller.js).
+//
+// `role` é coluna (não um valor fixo no código) por flexibilidade, mas hoje
+// só existe um jeito de chegar aqui — o formulário público — e ele sempre
+// manda 'terapeuta': é a única conta que alguém de fora pode *pedir* pra
+// criar; paciente só é criado por terapeuta/admin (nunca um pedido público)
+// e admin não se autocadastra.
+export const registrationRequestStatusEnum = pgEnum('registration_request_status', [
+  'pendente',
+  'aprovado',
+  'rejeitado',
+]);
+
+export const registrationRequests = pgTable('registration_requests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  passwordHash: text('password_hash').notNull(),
+  role: roleEnum('role').notNull().default('terapeuta'),
+  status: registrationRequestStatusEnum('status').notNull().default('pendente'),
+  decidedById: uuid('decided_by_id').references(() => users.id, { onDelete: 'set null' }),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Fase 4 (Mundos/Conteúdo) — `id` é um slug (ex.: "ensino-fundamental"),
 // não um uuid, de propósito: é o mesmo texto já usado nas rotas do front
 // (`/dashboard/mundo/:worldId`) desde antes de mundos virarem uma tabela de

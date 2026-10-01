@@ -58,16 +58,19 @@ export function AuthProvider({ children }) {
         return { success: true, user: body.user };
       },
 
-      async register({ name, email, password, role }) {
+      // A tela "Cadastrar" não cria conta na hora — só manda um PEDIDO, que
+      // fica pendente até um admin revisar e aprovar (Painel Admin →
+      // sininho de notificações). Por isso não loga ninguém aqui (sem
+      // `setUser`): só diz se o pedido foi aceito ou não.
+      async requestRegistration({ name, email, password }) {
         const { ok, body } = await apiFetch('/api/auth/register', {
           method: 'POST',
-          body: JSON.stringify({ name, email, password, role }),
+          body: JSON.stringify({ name, email, password }),
         });
         if (!ok) {
-          return { success: false, error: body?.error ?? 'Não foi possível concluir o cadastro.' };
+          return { success: false, error: body?.error ?? 'Não foi possível enviar o pedido de cadastro.' };
         }
-        setUser(body.user);
-        return { success: true, user: body.user };
+        return { success: true, message: body.message };
       },
 
       async logout() {

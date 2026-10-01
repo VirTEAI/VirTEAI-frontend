@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthShell from '../components/AuthShell';
-import { LetterIcon, LockIcon } from '../components/icons';
+import { LetterIcon, LockIcon, VerifiedIcon } from '../components/icons';
 import { useAuth } from '../context/AuthContext';
 import { fadeInUp, staggerContainer, staggerItem, buttonTap, buttonHover } from '../lib/motion';
 
@@ -10,28 +9,22 @@ import { fadeInUp, staggerContainer, staggerItem, buttonTap, buttonHover } from 
 const fieldClass =
   'flex items-center gap-[10px] rounded-full bg-surface px-4 py-[10px] ring-1 ring-inset ring-hairline-soft transition-shadow duration-200 focus-within:ring-2 focus-within:ring-brand';
 
-// A tela original (vinda do Figma) só tinha nome + e-mail — um cadastro
-// "de pedido de associado", sem senha nem escolha de papel, porque não
-// existia backend nenhum por trás. Agora que o cadastro cria uma conta de
-// verdade, esses dois campos são obrigatórios: sem eles a pessoa não
-// conseguiria logar depois. Mantive o resto da tela (título, cópia, termos)
-// como estava.
-const ROLE_OPTIONS = [
-  { value: 'paciente', label: 'Paciente' },
-  { value: 'terapeuta', label: 'Terapeuta' },
-  { value: 'admin', label: 'Administrador' },
-];
-
+// Essa tela não cria conta na hora — manda um "pedido de associado" (como
+// paciente nunca é criado por autocadastro, só por terapeuta/admin, e
+// admin não se autocadastra, o único papel que dá pra pedir aqui é
+// terapeuta; por isso não tem mais seletor de papel). Um admin revisa o
+// pedido no painel dele (sininho de notificações) e só aí a conta nasce de
+// verdade — com a mesma senha informada aqui, pra pessoa já poder logar
+// assim que for aprovada.
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('paciente');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { register } = useAuth();
-  const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
+  const { requestRegistration } = useAuth();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -46,7 +39,7 @@ export default function Register() {
     }
 
     setSubmitting(true);
-    const result = await register({ name, email, password, role });
+    const result = await requestRegistration({ name, email, password });
     setSubmitting(false);
 
     if (!result.success) {
@@ -54,7 +47,34 @@ export default function Register() {
       return;
     }
     setError('');
-    navigate(result.user.homePath, { replace: true });
+    setSubmitted(true);
+  }
+
+  if (submitted) {
+    return (
+      <AuthShell mode="register">
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+          className="flex flex-col items-center gap-4 py-6 text-center"
+        >
+          <motion.span
+            variants={staggerItem}
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-success-soft text-success"
+          >
+            <VerifiedIcon className="h-7 w-7" />
+          </motion.span>
+          <motion.h1 variants={staggerItem} className="text-[22px] font-semibold tracking-tight text-ink">
+            Pedido enviado!
+          </motion.h1>
+          <motion.p variants={staggerItem} className="max-w-[360px] text-[14px] text-ink-secondary">
+            Um administrador vai revisar seus dados antes de liberar o acesso. Assim que seu cadastro for
+            aprovado, você já pode entrar com o e-mail e a senha que acabou de criar.
+          </motion.p>
+        </motion.div>
+      </AuthShell>
+    );
   }
 
   return (
@@ -151,26 +171,10 @@ export default function Register() {
           </div>
         </motion.div>
 
-        <motion.fieldset variants={staggerItem}>
-          <legend className="mb-2 text-[14px] font-medium text-ink">Você é...</legend>
-          <div className="flex gap-2">
-            {ROLE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setRole(option.value)}
-                aria-pressed={role === option.value}
-                className={`flex-1 rounded-full px-3 py-2 text-[13px] font-medium transition-colors duration-200 ${
-                  role === option.value
-                    ? 'bg-brand text-white shadow-button'
-                    : 'bg-surface text-ink-secondary ring-1 ring-inset ring-hairline-soft hover:text-ink'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </motion.fieldset>
+        <motion.p variants={staggerItem} className="text-[12px] text-ink-secondary">
+          Esse formulário é pra quem quer se associar como terapeuta. Conta de paciente é criada pelo seu
+          terapeuta ou pelo administrador, não por aqui.
+        </motion.p>
 
         <motion.label
           variants={staggerItem}

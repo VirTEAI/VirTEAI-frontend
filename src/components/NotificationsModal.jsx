@@ -31,7 +31,16 @@ function UserCheckIcon({ className = '' }) {
   );
 }
 
-export default function NotificationsModal({ requests, onDecide, onClose }) {
+// Hoje só existe pedido de cadastro como terapeuta (ver Register.jsx), mas
+// o texto já busca o rótulo certo por `role` em vez de fixar a frase —
+// não quebra se um dia existir mais de um tipo de pedido.
+const ROLE_LABELS = {
+  terapeuta: 'terapeuta',
+  admin: 'administrador',
+  paciente: 'paciente',
+};
+
+export default function NotificationsModal({ requests, decidingId, error, onDecide, onClose }) {
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === 'Escape') onClose();
@@ -113,7 +122,7 @@ export default function NotificationsModal({ requests, onDecide, onClose }) {
                   <div className="flex items-center gap-1.5 rounded-lg bg-success-soft px-2.5 py-1.5">
                     <UserCheckIcon className="h-3.5 w-3.5 text-success" />
                     <p className="flex-1 text-[12px] font-medium text-success">
-                      Solicitação para ser terapeuta
+                      Solicitação para ser {ROLE_LABELS[req.role] ?? req.role}
                     </p>
                   </div>
 
@@ -121,18 +130,20 @@ export default function NotificationsModal({ requests, onDecide, onClose }) {
                     <motion.button
                       type="button"
                       onClick={() => onDecide(req.id, 'negar')}
+                      disabled={decidingId === req.id}
                       whileTap={buttonTap}
-                      className="flex-1 rounded-xl bg-danger-soft px-4 py-2.5 text-[13px] font-bold text-danger transition-colors duration-200 hover:bg-danger-soft/70 focus:outline-none focus:ring-2 focus:ring-danger"
+                      className="flex-1 rounded-xl bg-danger-soft px-4 py-2.5 text-[13px] font-bold text-danger transition-colors duration-200 hover:bg-danger-soft/70 focus:outline-none focus:ring-2 focus:ring-danger disabled:opacity-60"
                     >
                       Negar
                     </motion.button>
                     <motion.button
                       type="button"
                       onClick={() => onDecide(req.id, 'confirmar')}
+                      disabled={decidingId === req.id}
                       whileTap={buttonTap}
-                      className="flex-1 rounded-xl bg-success-soft px-4 py-2.5 text-[13px] font-bold text-success transition-colors duration-200 hover:bg-success-soft/70 focus:outline-none focus:ring-2 focus:ring-success"
+                      className="flex-1 rounded-xl bg-success-soft px-4 py-2.5 text-[13px] font-bold text-success transition-colors duration-200 hover:bg-success-soft/70 focus:outline-none focus:ring-2 focus:ring-success disabled:opacity-60"
                     >
-                      Confirmar
+                      {decidingId === req.id ? 'Aguarde…' : 'Confirmar'}
                     </motion.button>
                   </div>
                 </motion.div>
@@ -141,14 +152,15 @@ export default function NotificationsModal({ requests, onDecide, onClose }) {
           </div>
         )}
 
-        <div className="flex items-center justify-center pt-1">
-          <button
-            type="button"
-            className="rounded text-[13px] font-semibold text-brand-deep underline transition-colors duration-200 hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand"
+        {error && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="rounded-xl bg-danger-soft px-4 py-2 text-center text-[13px] text-danger"
           >
-            Ver todas as solicitações pendentes
-          </button>
-        </div>
+            {error}
+          </motion.p>
+        )}
       </motion.div>
     </>
   );

@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 import { createApp } from '../src/app.js';
 import { db, pool } from '../src/db/client.js';
 import { users, worlds, accessCodes } from '../src/db/schema.js';
+import { hashPassword } from '../src/lib/password.js';
+import { toPublicUser } from '../src/lib/public-user.js';
 
 const app = createApp();
 
@@ -30,16 +32,22 @@ afterAll(async () => {
   await pool.end();
 });
 
+// POST /api/auth/register não cria mais conta direto (agora é um pedido de
+// cadastro pendente de aprovação — ver registration-requests.test.js), então
+// os testes que só precisam de "um usuário logado qualquer" inserem direto
+// no banco (mesma senha com hash que o endpoint de verdade geraria) e
+// logam pelo /api/auth/login de sempre.
 async function createLoggedInUser(overrides) {
+  const { password = 'senha123', email = `fulano-${Math.random().toString(36).slice(2)}@exemplo.com`, ...rest } =
+    overrides ?? {};
+  const passwordHash = await hashPassword(password);
+  const [created] = await db
+    .insert(users)
+    .values({ name: 'Fulano', role: 'paciente', ...rest, email, passwordHash })
+    .returning();
   const agent = request.agent(app);
-  const res = await agent.post('/api/auth/register').send({
-    name: 'Fulano',
-    email: `fulano-${Math.random().toString(36).slice(2)}@exemplo.com`,
-    password: 'senha123',
-    role: 'paciente',
-    ...overrides,
-  });
-  return { agent, user: res.body.user };
+  await agent.post('/api/auth/login').send({ email, password });
+  return { agent, user: toPublicUser(created) };
 }
 
 describe('GET /api/worlds', () => {

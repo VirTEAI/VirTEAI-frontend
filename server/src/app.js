@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
+import registrationRequestsRoutes from './routes/registration-requests.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import patientsRoutes from './routes/patients.routes.js';
 import codesRoutes from './routes/codes.routes.js';
@@ -68,6 +69,7 @@ export function createApp() {
   });
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/registration-requests', registrationRequestsRoutes);
   app.use('/api/users', usersRoutes);
   app.use('/api/patients', patientsRoutes);
   app.use('/api/codes', codesRoutes);

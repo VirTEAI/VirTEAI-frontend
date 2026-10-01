@@ -3,13 +3,21 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { db, pool } from '../src/db/client.js';
 import { users } from '../src/db/schema.js';
+import { hashPassword } from '../src/lib/password.js';
 
 const app = createApp();
 
+// POST /api/auth/register não cria mais conta direto (agora é um pedido de
+// cadastro pendente de aprovação), então insere direto no banco — esses
+// testes só precisam que a conta já exista pra testar o fluxo de "esqueci
+// minha senha" sobre ela.
 async function registerUser(overrides = {}) {
-  return request(app)
-    .post('/api/auth/register')
-    .send({ name: 'Fulana', email: 'fulana@exemplo.com', password: 'senhaAntiga1', role: 'paciente', ...overrides });
+  const { password = 'senhaAntiga1', ...rest } = overrides;
+  const passwordHash = await hashPassword(password);
+  return db
+    .insert(users)
+    .values({ name: 'Fulana', email: 'fulana@exemplo.com', role: 'paciente', ...rest, passwordHash })
+    .returning();
 }
 
 beforeEach(async () => {

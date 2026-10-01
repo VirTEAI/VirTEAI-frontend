@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
@@ -9,28 +9,35 @@ import WorldCard from '../components/WorldCard';
 import VincularMundoModal from '../components/VincularMundoModal';
 import NotificationsModal from '../components/NotificationsModal';
 import { useWorlds } from '../hooks/useWorlds';
+import { apiFetch } from '../lib/api-client';
 import { fadeInUp, staggerContainer, buttonTap, buttonHover } from '../lib/motion';
 // Mesmo banner "Mundo em destaque" usado no dashboard do paciente/terapeuta
 // — não recebemos uma arte separada pra essa tela (ver PENDENTES.md).
 import imgBanner from '../assets/images/dashboard-banner.png';
 
-// Dados mockados — em produção viriam da API (solicitações de terapeutas
-// pendentes de aprovação; "Rascunhos" logo abaixo já usa dados reais).
-// Sem `avatar` — todo mundo sem foto própria usa o ícone de usuário
-// genérico (SafeImage cuida disso sozinho).
-const initialRequests = [
-  { id: 'req-1', name: 'Ana Clara Souza', email: 'ana.souza@email.com', avatar: null },
-  { id: 'req-2', name: 'Carlos Eduardo Lima', email: 'carlos.eduardo@email.com', avatar: null },
-  { id: 'req-3', name: 'Mariana Ferreira', email: 'mariana.ferreira@email.com', avatar: null },
-];
-
 export default function DashboardAdmin() {
   const navigate = useNavigate();
   const { worlds, isLoading: worldsLoading, refresh: refreshWorlds } = useWorlds();
-  const [requests, setRequests] = useState(initialRequests);
+  // Pedidos de cadastro pendentes (tela "Cadastrar" → vira pedido, não
+  // conta direto — ver Register.jsx) — sininho de notificações aqui no
+  // dashboard do admin é onde eles são revisados/aprovados/negados.
+  const [requests, setRequests] = useState([]);
+  const [decidingId, setDecidingId] = useState(null);
+  const [decisionError, setDecisionError] = useState('');
   const [vincularOpen, setVincularOpen] = useState(false);
   const [editingDraft, setEditingDraft] = useState(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch('/api/registration-requests?status=pendente').then(({ ok, body }) => {
+      if (cancelled) return;
+      setRequests(ok ? body.requests : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // O mundo criado pelo modal já é real (POST /api/worlds), não um rascunho
   // local — só falta recarregar a lista pra ele aparecer em "Mundos
@@ -55,9 +62,20 @@ export default function DashboardAdmin() {
   );
   const popularWorlds = [...publishedWorlds].sort((a, b) => b.views - a.views);
 
-  function handleRequestDecision(id) {
-    // "Negar" e "Confirmar" apenas removem a solicitação da lista local por
-    // enquanto — sem backend real ainda para aprovar/recusar terapeutas.
+  // "Negar" chama reject, "Confirmar" chama approve — só aí a conta do
+  // terapeuta nasce de verdade em `users` (ver
+  // registration-requests.controller.js). Em qualquer um dos dois casos o
+  // pedido sai da lista de pendentes.
+  async function handleRequestDecision(id, decision) {
+    setDecisionError('');
+    setDecidingId(id);
+    const action = decision === 'confirmar' ? 'approve' : 'reject';
+    const { ok, body } = await apiFetch(`/api/registration-requests/${id}/${action}`, { method: 'POST' });
+    setDecidingId(null);
+    if (!ok) {
+      setDecisionError(body?.error ?? 'Não foi possível concluir essa ação.');
+      return;
+    }
     setRequests((prev) => prev.filter((req) => req.id !== id));
   }
 
@@ -314,6 +332,8 @@ export default function DashboardAdmin() {
         {notificationsOpen && (
           <NotificationsModal
             requests={requests}
+            decidingId={decidingId}
+            error={decisionError}
             onDecide={handleRequestDecision}
             onClose={() => setNotificationsOpen(false)}
           />
