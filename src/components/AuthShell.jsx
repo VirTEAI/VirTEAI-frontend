@@ -1,10 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import SafeImage from './SafeImage';
-
-// Logo real ainda pendente de exportação no Figma — SafeImage evita que o
-// link quebrado estoure o layout enquanto isso.
-const imgLogo =
-  'https://www.figma.com/api/mcp/asset/0ab57ffb-e883-410c-b9eb-c6feede65b25.png';
+// Mesma marca usada no topo da página Sobre Nós, só que um pouco menor
+// aqui — cabe melhor acima do card de login/cadastro.
+import imgLogo from '../assets/images/sobre-marca.png';
 
 const tabClass = (isActiveTab) =>
   `flex h-[34px] flex-1 items-center justify-center rounded-full text-[14.5px] font-medium transition-all duration-200 ${
@@ -27,7 +24,9 @@ export default function AuthShell({ mode, hideTabs = false, children }) {
       <div className="flex w-full flex-1 items-center justify-center px-6 py-16 md:w-1/2">
         <div className="w-full max-w-[508px]">
           <div className="mb-10 flex justify-center">
-            <SafeImage src={imgLogo} alt="VirTEAI" className="h-[68px] w-[160px]" />
+            <NavLink to="/" aria-label="Ir para a página inicial">
+              <img src={imgLogo} alt="VirTEAI" className="h-[80px] w-auto object-contain" />
+            </NavLink>
           </div>
 
           <div className="rounded-[28px] border border-hairline-soft bg-white p-8 shadow-soft sm:p-10">

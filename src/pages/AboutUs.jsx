@@ -85,7 +85,7 @@ export default function AboutUs() {
         </motion.section>
 
         {/* Nosso time */}
-        <section className="border-b border-hairline-soft px-6 py-24 text-center md:py-28">
+        <section className="px-6 py-24 text-center md:py-28">
           <h2 className="mb-5 text-[36px] font-semibold tracking-tight text-ink">Nosso Time</h2>
           <p className="mx-auto mb-14 max-w-[1000px] text-[18px] leading-relaxed text-ink-secondary">
             A força da VirTEAI está na colaboração. Nosso time multidisciplinar reúne talentos de

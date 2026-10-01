@@ -60,7 +60,7 @@ export default function Header() {
       className="vt-glass-nav sticky top-0 z-30 border-b border-hairline-soft"
     >
       <div className="mx-auto flex h-[96px] w-full max-w-[1440px] items-center justify-between px-6 md:px-10">
-        <NavLink to="/" className="flex h-[84px] w-[198px] shrink-0 items-center overflow-hidden">
+        <NavLink to="/" className="flex h-[52px] w-[122px] shrink-0 items-center overflow-hidden">
           <SafeImage src={imgLogo} alt="VirTEAI" className="h-full w-full" />
         </NavLink>
 
