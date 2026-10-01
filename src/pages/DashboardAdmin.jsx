@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
-import { SearchIcon, LinkIcon, UserIcon } from '../components/icons';
+import { SearchIcon, LinkIcon } from '../components/icons';
 import WorldCard from '../components/WorldCard';
 import VincularMundoModal from '../components/VincularMundoModal';
 import NotificationsModal from '../components/NotificationsModal';
@@ -138,31 +138,6 @@ export default function DashboardAdmin() {
                 <span className="block text-[15px] font-semibold text-ink">Vincular um novo Mundo</span>
                 <span className="block truncate text-[13px] text-ink-secondary">
                   Cadastre um mundo de RV para os pacientes explorarem
-                </span>
-              </span>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-4 w-4 shrink-0 text-ink-tertiary transition-transform duration-200 group-hover:translate-x-0.5"
-              >
-                <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </motion.button>
-
-            <motion.button
-              variants={fadeInUp}
-              type="button"
-              whileTap={buttonTap}
-              whileHover={buttonHover}
-              className="group flex items-center gap-4 rounded-2xl border border-hairline-soft bg-white p-5 text-left shadow-soft transition-all duration-200 hover:border-brand hover:shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-deep">
-                <UserIcon className="h-5 w-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-semibold text-ink">Novo Terapeuta</span>
-                <span className="block truncate text-[13px] text-ink-secondary">
-                  Cadastre um novo terapeuta na plataforma
                 </span>
               </span>
               <svg

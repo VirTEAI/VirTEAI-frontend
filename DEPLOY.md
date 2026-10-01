@@ -13,10 +13,13 @@ ser feitos por você mesmo, nos respectivos sites. Preparei todo o resto
 ## Antes de começar
 
 - Você já tem conta no Vercel e no Render (confirmado).
-- O banco de produção no Neon já existe e já está populado com os dados
-  de demonstração (Fases 1–4). **Falta aplicar a migration da Fase 5**
-  (tabelas `sessions`/`session_areas`) — isso acontece automaticamente no
-  primeiro deploy do backend (Passo 2), não precisa fazer nada à parte.
+- O banco de produção no Neon já existe, já está com todas as migrations
+  em dia (até a mais recente, pedidos de cadastro) e já populado com os
+  dados de demonstração — não precisa aplicar nada manualmente antes do
+  deploy. Toda migration nova que você gerar daqui pra frente (`npm run
+  db:generate`) chega no banco sozinha a cada deploy do backend (ver
+  `buildCommand` no Passo 2), então essa nota não deveria precisar ser
+  atualizada de novo.
 - Guarde a connection string do Neon em mãos (a mesma usada no
   `run-neon-setup.mjs`), só **sem** o parâmetro `channel_binding=require`
   — mantenha só `sslmode=require`. Exemplo do formato:
@@ -26,9 +29,9 @@ ser feitos por você mesmo, nos respectivos sites. Preparei todo o resto
 
 ## Passo 1 — Subir o código pro GitHub
 
-O zip que te mandei (`virteai-site-deploy-ready.zip`) já vem com um
-repositório Git local pronto (`git init` + primeiro commit já feitos) —
-você só precisa criar um repositório vazio no GitHub e apontar pra ele.
+O zip que te mandei já vem com o repositório Git local pronto (histórico
+de commits incluído) — você só precisa criar um repositório vazio no
+GitHub e apontar pra ele.
 
 1. Descompacte o zip em algum lugar do seu computador.
 2. No GitHub, crie um repositório novo (pode ser privado), **sem**
@@ -126,6 +129,12 @@ Confirme especificamente: login mantém a sessão depois de recarregar a
 página (é o teste mais importante — é onde o cookie cross-domain
 `sameSite=none` entra em ação), gerar um código de acesso, validar e
 reportar uma sessão, e ver o resumo real em `/resumo`.
+
+Teste também o pedido de cadastro: abra `/register` numa aba anônima,
+envie um pedido (só pede terapeuta), depois logado como admin abra o
+sininho de notificações no Painel Admin e confirme que o pedido aparece
+e que "Confirmar"/"Negar" funcionam (o seed já deixa 3 pedidos de
+exemplo pendentes pra esse teste nem precisar criar um pedido novo).
 
 ## Limitações conhecidas em produção
 
