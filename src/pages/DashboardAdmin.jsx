@@ -14,12 +14,10 @@ import { fadeInUp, staggerContainer, buttonTap, buttonHover } from '../lib/motio
 // — não recebemos uma arte separada pra essa tela (ver PENDENTES.md).
 import imgBanner from '../assets/images/dashboard-banner.png';
 
-// Dados mockados — em produção viriam da API (mundos em rascunho, solicitações
-// de terapeutas pendentes de aprovação). Comentário deixado a pedido, já que
-// dados reais serão conectados depois. Sem `avatar` — todo mundo sem foto
-// própria usa o ícone de usuário genérico (SafeImage cuida disso sozinho).
-const initialDrafts = [{ id: 'draft-1', title: 'Untitled' }];
-
+// Dados mockados — em produção viriam da API (solicitações de terapeutas
+// pendentes de aprovação; "Rascunhos" logo abaixo já usa dados reais).
+// Sem `avatar` — todo mundo sem foto própria usa o ícone de usuário
+// genérico (SafeImage cuida disso sozinho).
 const initialRequests = [
   { id: 'req-1', name: 'Ana Clara Souza', email: 'ana.souza@email.com', avatar: null },
   { id: 'req-2', name: 'Carlos Eduardo Lima', email: 'carlos.eduardo@email.com', avatar: null },
@@ -29,23 +27,33 @@ const initialRequests = [
 export default function DashboardAdmin() {
   const navigate = useNavigate();
   const { worlds, isLoading: worldsLoading, refresh: refreshWorlds } = useWorlds();
-  const [drafts] = useState(initialDrafts);
   const [requests, setRequests] = useState(initialRequests);
   const [vincularOpen, setVincularOpen] = useState(false);
+  const [editingDraft, setEditingDraft] = useState(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // O mundo criado pelo modal já é real (POST /api/worlds), não um rascunho
   // local — só falta recarregar a lista pra ele aparecer em "Mundos
-  // Recentes" e fechar o modal.
+  // Recentes"/"Rascunhos" e fechar o modal.
   function handleVincularSubmit() {
     refreshWorlds();
     setVincularOpen(false);
+    setEditingDraft(null);
   }
 
-  const recentWorlds = [...worlds].sort(
+  // GET /api/worlds já devolve rascunho (status=draft) só pra admin — ver
+  // worlds.controller.js. "Mundos Recentes"/"Mundos Populares" são só o que
+  // já está publicado; um rascunho sem imagem/descrição ainda não é pra
+  // aparecer misturado com conteúdo de verdade pra paciente/terapeuta (nem
+  // apareceria mesmo, já que o backend esconde rascunho de quem não é
+  // admin — esse filtro aqui é só pra não duplicar o card nessas duas
+  // seções também, já que "Rascunhos" tem a seção própria dele).
+  const publishedWorlds = worlds.filter((w) => w.status !== 'draft');
+  const drafts = worlds.filter((w) => w.status === 'draft');
+  const recentWorlds = [...publishedWorlds].sort(
     (a, b) => new Date(b.launchedAt).getTime() - new Date(a.launchedAt).getTime()
   );
-  const popularWorlds = [...worlds].sort((a, b) => b.views - a.views);
+  const popularWorlds = [...publishedWorlds].sort((a, b) => b.views - a.views);
 
   function handleRequestDecision(id) {
     // "Negar" e "Confirmar" apenas removem a solicitação da lista local por
@@ -68,15 +76,14 @@ export default function DashboardAdmin() {
             animate="show"
             className="mb-12 flex flex-wrap gap-6"
           >
+            {!worldsLoading && drafts.length === 0 && (
+              <p className="text-[14px] text-ink-secondary">
+                Nenhum rascunho por enquanto — "Vincular um novo Mundo" abaixo tem a opção de
+                salvar como rascunho em vez de publicar direto.
+              </p>
+            )}
             {drafts.map((draft) => (
-              <motion.div
-                key={draft.id}
-                variants={fadeInUp}
-                className="flex w-full max-w-[328px] flex-col gap-2"
-              >
-                <div className="aspect-[372/227] w-full rounded-xl bg-surface ring-1 ring-inset ring-hairline-soft" />
-                <p className="text-[16px] text-ink">{draft.title}</p>
-              </motion.div>
+              <WorldCard key={`draft-${draft.id}`} world={draft} onSelect={setEditingDraft} />
             ))}
           </motion.div>
 
@@ -209,6 +216,35 @@ export default function DashboardAdmin() {
                 <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </motion.button>
+
+            <motion.button
+              variants={fadeInUp}
+              type="button"
+              onClick={() => navigate('/admin/mundos')}
+              whileTap={buttonTap}
+              whileHover={buttonHover}
+              className="group flex items-center gap-4 rounded-2xl border border-hairline-soft bg-white p-5 text-left shadow-soft transition-all duration-200 hover:border-brand hover:shadow-elevated focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-deep">
+                <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-ink">Gerenciar Mundos</span>
+                <span className="block truncate text-[13px] text-ink-secondary">
+                  Edite, publique ou exclua mundos existentes
+                </span>
+              </span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-4 w-4 shrink-0 text-ink-tertiary transition-transform duration-200 group-hover:translate-x-0.5"
+              >
+                <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </motion.button>
           </motion.div>
 
           <motion.div
@@ -261,6 +297,16 @@ export default function DashboardAdmin() {
       <AnimatePresence>
         {vincularOpen && (
           <VincularMundoModal onClose={() => setVincularOpen(false)} onSubmit={handleVincularSubmit} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingDraft && (
+          <VincularMundoModal
+            world={editingDraft}
+            onClose={() => setEditingDraft(null)}
+            onSubmit={handleVincularSubmit}
+          />
         )}
       </AnimatePresence>
 

@@ -48,6 +48,12 @@ export const users = pgTable('users', {
 // verdade pelo formulário "Vincular Novo Mundo"; os 2 mundos de
 // demonstração continuam usando as URLs do Figma, como todo o resto do
 // conteúdo semeado.
+// "Rascunho" — mundo criado pelo admin mas ainda não pronto pra aparecer
+// pra paciente/terapeuta. `listWorlds` só devolve rascunho pra quem é
+// admin; todo mundo semeado (`db:seed`) e todo mundo publicado continua
+// 'published', então isso não muda nada do que já existe.
+export const worldStatusEnum = pgEnum('world_status', ['draft', 'published']);
+
 export const worlds = pgTable('worlds', {
   id: varchar('id', { length: 80 }).primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
@@ -55,6 +61,7 @@ export const worlds = pgTable('worlds', {
   thumbnail: text('thumbnail'),
   gallery: text('gallery'),
   connectionId: varchar('connection_id', { length: 120 }),
+  status: worldStatusEnum('status').notNull().default('published'),
   likes: integer('likes').notNull().default(0),
   views: integer('views').notNull().default(0),
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
@@ -132,4 +139,19 @@ export const sessionAreas = pgTable('session_areas', {
   name: varchar('name', { length: 120 }).notNull(),
   tag: varchar('tag', { length: 60 }).notNull(),
   timeSeconds: integer('time_seconds').notNull(),
+});
+
+// Comentários na página de um mundo (DashboardWorld.jsx) — qualquer pessoa
+// logada pode comentar; apagar é reservado a quem escreveu ou a um admin
+// (moderação, pedida explicitamente pelo projeto).
+export const worldComments = pgTable('world_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  worldId: varchar('world_id', { length: 80 })
+    .notNull()
+    .references(() => worlds.id, { onDelete: 'cascade' }),
+  authorId: uuid('author_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

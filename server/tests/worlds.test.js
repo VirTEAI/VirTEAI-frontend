@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
+import { eq } from 'drizzle-orm';
 import { createApp } from '../src/app.js';
 import { db, pool } from '../src/db/client.js';
-import { users, worlds } from '../src/db/schema.js';
+import { users, worlds, accessCodes } from '../src/db/schema.js';
 
 const app = createApp();
 
@@ -14,11 +15,17 @@ const TINY_PNG = Buffer.from(
 );
 
 beforeEach(async () => {
+  // access_codes referencia worlds com ON DELETE RESTRICT — tem que sumir
+  // primeiro, senão apagar `worlds` falha quando sobrou algum código preso a
+  // um mundo (ex.: o teste de DELETE /api/worlds/:id que deixa um código
+  // gerado de propósito).
+  await db.delete(accessCodes);
   await db.delete(worlds);
   await db.delete(users);
 });
 
 afterAll(async () => {
+  await db.delete(accessCodes);
   await db.delete(worlds);
   await db.delete(users);
   await pool.end();
@@ -176,5 +183,88 @@ describe('PATCH /api/worlds/:id', () => {
     const { agent } = await createLoggedInUser({ role: 'admin' });
     const res = await agent.patch('/api/worlds/nao-existe').field('description', 'x');
     expect(res.status).toBe(404);
+  });
+
+  it('admin publica um rascunho via status', async () => {
+    const { agent } = await createLoggedInUser({ role: 'admin' });
+    const created = await agent.post('/api/worlds').field('title', 'Rascunho').field('status', 'draft');
+    expect(created.body.world.status).toBe('draft');
+
+    const res = await agent.patch(`/api/worlds/${created.body.world.id}`).field('status', 'published');
+    expect(res.status).toBe(200);
+    expect(res.body.world.status).toBe('published');
+  });
+});
+
+describe('Rascunhos (status draft/published)', () => {
+  it('mundo criado com status=draft só aparece pra admin em GET /api/worlds', async () => {
+    const { agent: admin } = await createLoggedInUser({ role: 'admin' });
+    await admin.post('/api/worlds').field('title', 'Rascunho Admin').field('status', 'draft');
+    await admin.post('/api/worlds').field('title', 'Publicado');
+
+    const asAdmin = await admin.get('/api/worlds');
+    expect(asAdmin.body.worlds.length).toBe(2);
+
+    const { agent: paciente } = await createLoggedInUser({ role: 'paciente' });
+    const asPaciente = await paciente.get('/api/worlds');
+    expect(asPaciente.body.worlds.length).toBe(1);
+    expect(asPaciente.body.worlds[0].title).toBe('Publicado');
+  });
+
+  it('GET /api/worlds/:id de um rascunho -> 404 pra quem não é admin', async () => {
+    const { agent: admin } = await createLoggedInUser({ role: 'admin' });
+    const created = await admin.post('/api/worlds').field('title', 'Secreto').field('status', 'draft');
+
+    const { agent: terapeuta } = await createLoggedInUser({ role: 'terapeuta' });
+    const res = await terapeuta.get(`/api/worlds/${created.body.world.id}`);
+    expect(res.status).toBe(404);
+  });
+
+  it('sem status informado -> continua publicado por padrão (comportamento antigo preservado)', async () => {
+    const { agent } = await createLoggedInUser({ role: 'admin' });
+    const created = await agent.post('/api/worlds').field('title', 'Padrão');
+    expect(created.body.world.status).toBe('published');
+  });
+});
+
+describe('DELETE /api/worlds/:id', () => {
+  it('paciente/terapeuta não podem excluir (403)', async () => {
+    await db.insert(worlds).values({ id: 'home', title: 'Home' });
+    const { agent } = await createLoggedInUser({ role: 'terapeuta' });
+    const res = await agent.delete('/api/worlds/home');
+    expect(res.status).toBe(403);
+  });
+
+  it('mundo inexistente -> 404', async () => {
+    const { agent } = await createLoggedInUser({ role: 'admin' });
+    const res = await agent.delete('/api/worlds/nao-existe');
+    expect(res.status).toBe(404);
+  });
+
+  it('admin exclui um mundo sem códigos de acesso', async () => {
+    const { agent } = await createLoggedInUser({ role: 'admin' });
+    const created = await agent.post('/api/worlds').field('title', 'Descartável');
+
+    const res = await agent.delete(`/api/worlds/${created.body.world.id}`);
+    expect(res.status).toBe(204);
+
+    const after = await agent.get(`/api/worlds/${created.body.world.id}`);
+    expect(after.status).toBe(404);
+  });
+
+  it('mundo com código de acesso gerado -> 409, não exclui', async () => {
+    const { agent: admin } = await createLoggedInUser({ role: 'admin' });
+    const created = await admin.post('/api/worlds').field('title', 'Com Código');
+    const { agent: terapeuta, user: terapeutaUser } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: paciente } = await createLoggedInUser({ role: 'paciente' });
+    await db.update(users).set({ responsibleTherapistId: terapeutaUser.id }).where(eq(users.id, paciente.id));
+
+    await terapeuta.post('/api/codes').send({ worldId: created.body.world.id, patientId: paciente.id });
+
+    const res = await admin.delete(`/api/worlds/${created.body.world.id}`);
+    expect(res.status).toBe(409);
+
+    const stillThere = await admin.get(`/api/worlds/${created.body.world.id}`);
+    expect(stillThere.status).toBe(200);
   });
 });

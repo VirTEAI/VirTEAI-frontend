@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import AppHeader from '../components/AppHeader';
 import Footer from '../components/Footer';
 import SafeImage from '../components/SafeImage';
+import EditProfileModal from '../components/EditProfileModal';
+import ConfirmModal from '../components/ConfirmModal';
 import { apiFetch } from '../lib/api-client';
 import { fadeInUp, staggerContainer, staggerItem, buttonTap } from '../lib/motion';
 
@@ -40,6 +42,10 @@ export default function AdminTherapists() {
   const [selectedToAdd, setSelectedToAdd] = useState({});
   const [pendingAction, setPendingAction] = useState(null); // `${therapistId}:${patientId}` em voo
   const [actionError, setActionError] = useState('');
+  const [editingTherapist, setEditingTherapist] = useState(null);
+  const [deletingTherapist, setDeletingTherapist] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -110,6 +116,32 @@ export default function AdminTherapists() {
     await loadData();
   }
 
+  async function handleSaveTherapist(values) {
+    const { ok, body } = await apiFetch(`/api/users/${editingTherapist.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(values),
+    });
+    if (!ok) {
+      return { success: false, error: body?.error ?? 'Não foi possível salvar as alterações.' };
+    }
+    setEditingTherapist(null);
+    await loadData();
+    return { success: true };
+  }
+
+  async function handleDeleteTherapist() {
+    setDeleteError('');
+    setIsDeleting(true);
+    const { ok, body } = await apiFetch(`/api/users/${deletingTherapist.id}`, { method: 'DELETE' });
+    setIsDeleting(false);
+    if (!ok) {
+      setDeleteError(body?.error ?? 'Não foi possível excluir essa conta.');
+      return;
+    }
+    setDeletingTherapist(null);
+    await loadData();
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <AppHeader showBack onBack={() => navigate('/admin')} />
@@ -166,33 +198,62 @@ export default function AdminTherapists() {
                     variants={staggerItem}
                     className="rounded-2xl border border-hairline-soft bg-white p-5 shadow-soft"
                   >
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId(isOpen ? null : therapist.id)}
-                      aria-expanded={isOpen}
-                      className="flex w-full items-center justify-between gap-4"
-                    >
-                      <div className="flex items-center gap-3">
+                    <div className="flex w-full items-center justify-between gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(isOpen ? null : therapist.id)}
+                        aria-expanded={isOpen}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
                         <SafeImage
                           src={therapist.avatar}
                           alt={therapist.name}
                           className="h-[48px] w-[48px] shrink-0"
                           rounded
                         />
-                        <div className="text-left">
-                          <p className="text-[15px] font-medium text-ink">{therapist.name}</p>
-                          <p className="text-[12px] text-ink-tertiary">{therapist.email}</p>
+                        <div className="min-w-0 text-left">
+                          <p className="truncate text-[15px] font-medium text-ink">{therapist.name}</p>
+                          <p className="truncate text-[12px] text-ink-tertiary">{therapist.email}</p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
+                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
                         <span className="rounded-full bg-brand-soft px-3 py-1 text-[12px] font-medium text-brand-deep">
                           {linked.length} paciente{linked.length === 1 ? '' : 's'}
                         </span>
-                        <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronDown className="h-5 w-5 text-ink-secondary" />
-                        </motion.span>
+                        <button
+                          type="button"
+                          onClick={() => setEditingTherapist(therapist)}
+                          className="rounded-lg border border-hairline px-3 py-1.5 text-[12px] font-medium text-ink transition-colors duration-200 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError('');
+                            setDeletingTherapist(therapist);
+                          }}
+                          className="rounded-lg border border-hairline px-3 py-1.5 text-[12px] font-medium text-danger transition-colors duration-200 hover:bg-danger-soft focus:outline-none focus:ring-2 focus:ring-brand"
+                        >
+                          Excluir
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedId(isOpen ? null : therapist.id)}
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? 'Recolher' : 'Expandir'}
+                          className="p-1"
+                        >
+                          <motion.span
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="block"
+                          >
+                            <ChevronDown className="h-5 w-5 text-ink-secondary" />
+                          </motion.span>
+                        </button>
                       </div>
-                    </button>
+                    </div>
 
                     <AnimatePresence>
                       {isOpen && (
@@ -287,6 +348,31 @@ export default function AdminTherapists() {
       </main>
 
       <Footer />
+
+      <AnimatePresence>
+        {editingTherapist && (
+          <EditProfileModal
+            title="Editar Terapeuta"
+            profile={editingTherapist}
+            onClose={() => setEditingTherapist(null)}
+            onSave={handleSaveTherapist}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deletingTherapist && (
+          <ConfirmModal
+            title="Excluir terapeuta"
+            message={`Tem certeza que quer excluir a conta de ${deletingTherapist.name}? Os pacientes vinculados a ela ficam sem terapeuta (não são excluídos). Os códigos de acesso gerados por ${deletingTherapist.name} e as sessões registradas a partir deles também são apagados. Essa ação não pode ser desfeita.`}
+            confirmLabel="Excluir"
+            isSubmitting={isDeleting}
+            error={deleteError}
+            onConfirm={handleDeleteTherapist}
+            onClose={() => setDeletingTherapist(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

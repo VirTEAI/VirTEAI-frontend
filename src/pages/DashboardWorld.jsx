@@ -10,6 +10,7 @@ import GenerateCodeModal from '../components/GenerateCodeModal';
 import { useAuth } from '../context/AuthContext';
 import { usePatients } from '../hooks/usePatients';
 import { useWorlds } from '../hooks/useWorlds';
+import { apiFetch } from '../lib/api-client';
 import { fadeInUp, staggerContainer, buttonTap, buttonHover } from '../lib/motion';
 
 function formatLaunchedAt(isoDate) {
@@ -17,10 +18,6 @@ function formatLaunchedAt(isoDate) {
     new Date(isoDate)
   );
 }
-
-// Sem avatar próprio aqui — todo mundo sem foto usa o ícone de usuário
-// genérico (SafeImage cuida disso sozinho quando `avatar` é null).
-const comments = [{ author: 'Fabricia Santos', text: 'Simplesmente muito bom!! minha paciente adorou' }];
 
 export default function DashboardWorld() {
   const navigate = useNavigate();
@@ -35,6 +32,15 @@ export default function DashboardWorld() {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [showGenerateFlow, setShowGenerateFlow] = useState(false);
 
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [newComment, setNewComment] = useState('');
+  const [isPostingComment, setIsPostingComment] = useState(false);
+  const [commentError, setCommentError] = useState('');
+
+  const [hasSession, setHasSession] = useState(false);
+  const [sessionCheckLoading, setSessionCheckLoading] = useState(true);
+
   // A lista de pacientes vem da API de forma assíncrona — assim que ela
   // chega, seleciona o primeiro por padrão.
   useEffect(() => {
@@ -42,6 +48,85 @@ export default function DashboardWorld() {
       setSelectedPatientId(patients[0].id);
     }
   }, [patients, selectedPatientId]);
+
+  // Comentários de verdade (GET /api/worlds/:worldId/comments) — recarrega
+  // sempre que o mundo muda.
+  useEffect(() => {
+    if (!world) return undefined;
+    let cancelled = false;
+    setCommentsLoading(true);
+    apiFetch(`/api/worlds/${world.id}/comments`).then(({ ok, body }) => {
+      if (cancelled) return;
+      setComments(ok ? body.comments : []);
+      setCommentsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [world]);
+
+  // "Ver Resumo da Última Sessão" só deve aparecer se já existe uma sessão
+  // registrada pra esse contexto — paciente sempre confere a própria (o
+  // backend ignora patientId pra esse papel); terapeuta/admin conferem a do
+  // paciente selecionado no PatientSelector (sem paciente selecionado ainda
+  // não tem "de quem" seria o resumo, então o botão fica escondido).
+  useEffect(() => {
+    if (!world) return undefined;
+    if (user.role !== 'paciente' && !selectedPatientId) {
+      setHasSession(false);
+      setSessionCheckLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setSessionCheckLoading(true);
+    const query = new URLSearchParams({ worldId: world.id });
+    if (user.role !== 'paciente' && selectedPatientId) {
+      query.set('patientId', selectedPatientId);
+    }
+    apiFetch(`/api/sessions/latest?${query.toString()}`).then(({ ok }) => {
+      if (cancelled) return;
+      setHasSession(ok);
+      setSessionCheckLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [world, user.role, selectedPatientId]);
+
+  async function handlePostComment(event) {
+    event.preventDefault();
+    const text = newComment.trim();
+    if (!text) return;
+    setCommentError('');
+    setIsPostingComment(true);
+    const { ok, body } = await apiFetch(`/api/worlds/${world.id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+    setIsPostingComment(false);
+    if (!ok) {
+      setCommentError(body?.error ?? 'Não foi possível publicar o comentário.');
+      return;
+    }
+    setComments((prev) => [...prev, body.comment]);
+    setNewComment('');
+  }
+
+  async function handleDeleteComment(commentId) {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    const { ok } = await apiFetch(`/api/worlds/${world.id}/comments/${commentId}`, { method: 'DELETE' });
+    if (!ok) {
+      // Falhou de verdade (não só uma remoção otimista) — recarrega a lista
+      // real pra não deixar a tela mentindo sobre o que ainda existe.
+      const { ok: refetchOk, body } = await apiFetch(`/api/worlds/${world.id}/comments`);
+      if (refetchOk) setComments(body.comments);
+    }
+  }
+
+  function handleViewSummary() {
+    const query = user.role !== 'paciente' && selectedPatientId ? `?patientId=${selectedPatientId}` : '';
+    navigate(`/dashboard/mundo/${world.id}/resumo${query}`);
+  }
 
   // Só redireciona depois que a lista de mundos terminou de carregar — antes
   // disso `world` também estaria undefined mesmo pra um id válido, e mandar
@@ -147,20 +232,31 @@ export default function DashboardWorld() {
 
               <h2 className="mb-4 text-[16px] font-medium text-ink">{comments.length} Comentários</h2>
               <div className="flex flex-col gap-4">
-                {comments.map((comment, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <SafeImage
-                      src={null}
-                      alt={comment.author}
-                      className="h-[37px] w-[37px]"
-                      rounded
-                    />
-                    <div>
-                      <p className="text-[16px] font-medium text-ink">{comment.author}</p>
-                      <p className="text-[13px] text-ink-tertiary">{comment.text}</p>
+                {commentsLoading && <p className="text-[13px] text-ink-tertiary">Carregando comentários…</p>}
+                {!commentsLoading && comments.length === 0 && (
+                  <p className="text-[13px] text-ink-tertiary">Ainda não há comentários nesse mundo.</p>
+                )}
+                {comments.map((comment) => {
+                  const canDelete = user.role === 'admin' || comment.authorId === user.id;
+                  return (
+                    <div key={comment.id} className="flex items-start gap-3">
+                      <SafeImage src={comment.authorAvatar} alt={comment.authorName} className="h-[37px] w-[37px]" rounded />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[16px] font-medium text-ink">{comment.authorName}</p>
+                        <p className="text-[13px] text-ink-tertiary">{comment.text}</p>
+                      </div>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="shrink-0 text-[12px] text-ink-tertiary transition-colors duration-200 hover:text-danger"
+                        >
+                          Excluir
+                        </button>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -187,23 +283,31 @@ export default function DashboardWorld() {
                 </>
               )}
 
-              <button
-                type="button"
-                onClick={() => navigate(`/dashboard/mundo/${world.id}/resumo`)}
-                className="flex h-[49px] items-center justify-center rounded-full border border-hairline text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-surface"
-              >
-                Ver Resumo da Última Sessão
-              </button>
+              {!sessionCheckLoading && hasSession && (
+                <button
+                  type="button"
+                  onClick={handleViewSummary}
+                  className="flex h-[49px] items-center justify-center rounded-full border border-hairline text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-surface"
+                >
+                  Ver Resumo da Última Sessão
+                </button>
+              )}
 
-              <label className="sr-only" htmlFor="add-comment">
-                Adicione um comentário
-              </label>
-              <input
-                id="add-comment"
-                type="text"
-                placeholder="Adicione um comentario"
-                className="rounded-full bg-surface px-4 py-2 text-[13px] text-ink ring-1 ring-inset ring-hairline-soft placeholder:text-ink-tertiary transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-brand"
-              />
+              <form onSubmit={handlePostComment} className="flex flex-col gap-2">
+                <label className="sr-only" htmlFor="add-comment">
+                  Adicione um comentário
+                </label>
+                <input
+                  id="add-comment"
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  disabled={isPostingComment}
+                  placeholder="Adicione um comentario"
+                  className="rounded-full bg-surface px-4 py-2 text-[13px] text-ink ring-1 ring-inset ring-hairline-soft placeholder:text-ink-tertiary transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
+                />
+                {commentError && <p className="text-[12px] text-red-600">{commentError}</p>}
+              </form>
 
               <div className="mt-4 border-t border-hairline-soft pt-4">
                 <p className="mb-1 text-[16px] font-medium text-ink">Alguma Duvida?</p>

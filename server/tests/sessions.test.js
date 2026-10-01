@@ -235,4 +235,53 @@ describe('GET /api/sessions/latest', () => {
     expect(res.status).toBe(200);
     expect(res.body.session.patientId).toBe(patient.id);
   });
+
+  it('terapeuta com patientId -> só a sessão daquele paciente específico, mesmo com outro mais recente', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patientA } = await createLoggedInUser({ role: 'paciente' });
+    const { user: patientB } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patientA.id, therapist.id);
+    await linkPatientToTherapist(patientB.id, therapist.id);
+
+    const codeA = await createUsedCode({ patientId: patientA.id, therapistId: therapist.id });
+    await therapistAgent.post('/api/sessions').send({ code: codeA.code, ...TELEMETRY });
+    // Sessão de B é criada depois (mais recente) — sem filtrar por
+    // patientId, seria essa que viria como "latest".
+    const codeB = await createUsedCode({ patientId: patientB.id, therapistId: therapist.id });
+    await therapistAgent.post('/api/sessions').send({ code: codeB.code, ...TELEMETRY });
+
+    const res = await therapistAgent.get(
+      `/api/sessions/latest?worldId=ensino-fundamental&patientId=${patientA.id}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.session.patientId).toBe(patientA.id);
+  });
+
+  it('terapeuta com patientId de um paciente que não é dele -> 404 (não vaza sessão alheia)', async () => {
+    const { agent: therapistAgent, user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: otherTherapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: strangerPatient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(strangerPatient.id, otherTherapist.id);
+    const code = await createUsedCode({ patientId: strangerPatient.id, therapistId: otherTherapist.id });
+    await therapistAgent.post('/api/sessions').send({ code: code.code, ...TELEMETRY });
+
+    const res = await therapistAgent.get(
+      `/api/sessions/latest?worldId=ensino-fundamental&patientId=${strangerPatient.id}`
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it('admin com patientId -> só a sessão daquele paciente', async () => {
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const { user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    const code = await createUsedCode({ patientId: patient.id, therapistId: therapist.id });
+    await adminAgent.post('/api/sessions').send({ code: code.code, ...TELEMETRY });
+
+    const res = await adminAgent.get(
+      `/api/sessions/latest?worldId=ensino-fundamental&patientId=${patient.id}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.session.patientId).toBe(patient.id);
+  });
 });

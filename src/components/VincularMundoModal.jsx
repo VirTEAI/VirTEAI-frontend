@@ -5,9 +5,12 @@ import { ImagePlaceholderIcon } from './icons';
 import { overlayFade, modalScale, buttonTap, buttonHover } from '../lib/motion';
 
 
-function PhotoSlot({ file, onPick, wide = false }) {
+function PhotoSlot({ file, existingUrl, onPick, wide = false }) {
   const inputRef = useRef(null);
   const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  // Editando um mundo que já tem foto: mostra ela até uma nova ser
+  // escolhida, em vez de voltar pro placeholder vazio.
+  const displayUrl = previewUrl ?? existingUrl ?? null;
 
   useEffect(() => {
     return () => {
@@ -24,8 +27,8 @@ function PhotoSlot({ file, onPick, wide = false }) {
         wide ? 'flex-1 rounded-l-2xl' : 'flex-1 rounded-r-2xl border-l border-hairline'
       }`}
     >
-      {previewUrl ? (
-        <img src={previewUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      {displayUrl ? (
+        <img src={displayUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
         <ImagePlaceholderIcon className="h-8 w-8 text-ink-tertiary opacity-60" />
       )}
@@ -40,10 +43,14 @@ function PhotoSlot({ file, onPick, wide = false }) {
   );
 }
 
-export default function VincularMundoModal({ onClose, onSubmit }) {
-  const [nome, setNome] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [idConexao, setIdConexao] = useState('');
+// `world` presente = modo edição (PATCH no mundo existente, inclusive um
+// rascunho que ainda não foi publicado); ausente = criação (POST), igual
+// sempre funcionou.
+export default function VincularMundoModal({ world = null, onClose, onSubmit }) {
+  const isEditing = Boolean(world);
+  const [nome, setNome] = useState(world?.title ?? '');
+  const [descricao, setDescricao] = useState(world?.description ?? '');
+  const [idConexao, setIdConexao] = useState(world?.connectionId ?? '');
   const [foto1, setFoto1] = useState(null);
   const [foto2, setFoto2] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,8 +64,10 @@ export default function VincularMundoModal({ onClose, onSubmit }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, isSubmitting]);
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  // `status` decide se o POST/PATCH publica direto ou salva como rascunho —
+  // os dois botões abaixo chamam isso com um valor diferente em vez de
+  // depender de um checkbox separado.
+  async function submitWithStatus(status) {
     setError('');
 
     const formData = new FormData();
@@ -68,15 +77,54 @@ export default function VincularMundoModal({ onClose, onSubmit }) {
     if (foto1) formData.append('thumbnail', foto1);
     if (foto2) formData.append('gallery', foto2);
 
+    let result;
     setIsSubmitting(true);
-    const { ok, body } = await apiFetch('/api/worlds', { method: 'POST', body: formData });
+    if (isEditing) {
+      // Editando um mundo que já existe (publicado ou rascunho) — não mexe
+      // no status aqui; isso é só o botão "Publicar" (handlePublish) que faz.
+      result = await apiFetch(`/api/worlds/${world.id}`, { method: 'PATCH', body: formData });
+    } else {
+      formData.append('status', status);
+      result = await apiFetch('/api/worlds', { method: 'POST', body: formData });
+    }
     setIsSubmitting(false);
 
-    if (!ok) {
-      setError(body?.error ?? 'Não foi possível vincular o mundo. Tente novamente.');
+    if (!result.ok) {
+      setError(result.body?.error ?? 'Não foi possível salvar o mundo. Tente novamente.');
       return;
     }
 
+    onSubmit(result.body.world);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    await submitWithStatus('published');
+  }
+
+  async function handleSaveDraft() {
+    await submitWithStatus('draft');
+  }
+
+  async function handlePublish() {
+    // Mundo já existe como rascunho — só muda o status, sem reenviar título/
+    // descrição/imagens de novo (evita sobrescrever por engano se o campo
+    // de texto estiver vazio nesse momento).
+    setError('');
+    setIsSubmitting(true);
+    const { ok, body } = await apiFetch(`/api/worlds/${world.id}`, {
+      method: 'PATCH',
+      body: (() => {
+        const fd = new FormData();
+        fd.append('status', 'published');
+        return fd;
+      })(),
+    });
+    setIsSubmitting(false);
+    if (!ok) {
+      setError(body?.error ?? 'Não foi possível publicar o mundo.');
+      return;
+    }
     onSubmit(body.world);
   }
 
@@ -119,12 +167,19 @@ export default function VincularMundoModal({ onClose, onSubmit }) {
               />
             </svg>
           </button>
-          <h2 className="text-[24px] font-semibold tracking-tight text-ink">Vincular Novo Mundo</h2>
+          <h2 className="text-[24px] font-semibold tracking-tight text-ink">
+            {isEditing ? 'Editar Mundo' : 'Vincular Novo Mundo'}
+          </h2>
+          {isEditing && world.status === 'draft' && (
+            <span className="rounded-full bg-surface px-3 py-1 text-[12px] font-medium text-ink-secondary ring-1 ring-inset ring-hairline-soft">
+              Rascunho
+            </span>
+          )}
         </div>
 
         <div className="flex h-[180px] w-full gap-0 overflow-hidden rounded-2xl">
-          <PhotoSlot file={foto1} onPick={setFoto1} wide />
-          <PhotoSlot file={foto2} onPick={setFoto2} />
+          <PhotoSlot file={foto1} existingUrl={world?.thumbnail} onPick={setFoto1} wide />
+          <PhotoSlot file={foto2} existingUrl={world?.gallery} onPick={setFoto2} />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -171,15 +226,49 @@ export default function VincularMundoModal({ onClose, onSubmit }) {
 
         {error && <p className="text-[13px] text-red-600">{error}</p>}
 
-        <motion.button
-          type="submit"
-          disabled={isSubmitting}
-          whileTap={buttonTap}
-          whileHover={buttonHover}
-          className="flex h-[49px] items-center justify-center rounded-full bg-brand text-[14px] font-medium text-white shadow-button transition-colors duration-200 hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand"
-        >
-          {isSubmitting ? 'Vinculando…' : 'Vincular Novo Mundo'}
-        </motion.button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {!isEditing && (
+            <motion.button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={isSubmitting}
+              whileTap={buttonTap}
+              whileHover={buttonHover}
+              className="flex h-[49px] flex-1 items-center justify-center rounded-full border border-hairline text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              {isSubmitting ? 'Salvando…' : 'Salvar como Rascunho'}
+            </motion.button>
+          )}
+
+          {isEditing && world.status === 'draft' && (
+            <motion.button
+              type="button"
+              onClick={handlePublish}
+              disabled={isSubmitting}
+              whileTap={buttonTap}
+              whileHover={buttonHover}
+              className="flex h-[49px] flex-1 items-center justify-center rounded-full border border-hairline text-[14px] font-medium text-ink transition-colors duration-200 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              {isSubmitting ? 'Publicando…' : 'Publicar Mundo'}
+            </motion.button>
+          )}
+
+          <motion.button
+            type="submit"
+            disabled={isSubmitting}
+            whileTap={buttonTap}
+            whileHover={buttonHover}
+            className="flex h-[49px] flex-1 items-center justify-center rounded-full bg-brand text-[14px] font-medium text-white shadow-button transition-colors duration-200 hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand"
+          >
+            {isSubmitting
+              ? isEditing
+                ? 'Salvando…'
+                : 'Vinculando…'
+              : isEditing
+                ? 'Salvar Alterações'
+                : 'Vincular Novo Mundo'}
+          </motion.button>
+        </div>
       </motion.form>
     </div>
   );

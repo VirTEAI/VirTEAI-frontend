@@ -120,22 +120,30 @@ export async function getSessionByCode(req, res) {
   return res.json({ session: toPublicSession(session, areas) });
 }
 
-// GET /api/sessions/latest?worldId=... — sessão mais recente daquele mundo
-// visível a quem está logado (usado como padrão em /resumo quando não veio
-// um código específico na URL): paciente vê a própria; terapeuta vê a mais
-// recente entre os pacientes dele; admin vê a mais recente de qualquer um.
+// GET /api/sessions/latest?worldId=...&patientId=... — sessão mais recente
+// daquele mundo visível a quem está logado (usado como padrão em /resumo
+// quando não veio um código específico na URL, e também só pra CONFERIR se
+// já existe sessão, antes de mostrar o botão "Ver Resumo da Última Sessão"
+// em DashboardWorld.jsx): paciente vê sempre a própria (patientId é
+// ignorado, não tem como ver a de outro paciente por aqui); terapeuta vê a
+// mais recente entre os pacientes dele, ou — se `patientId` foi informado —
+// só a desse paciente específico (e só se ele for mesmo vinculado a esse
+// terapeuta); admin vê a mais recente de qualquer um, ou só de um paciente
+// específico do mesmo jeito.
 export async function getLatestSession(req, res) {
-  const { worldId } = req.query;
+  const { worldId, patientId } = req.query;
   if (!worldId) {
     return res.status(400).json({ error: 'Informe o worldId.' });
   }
 
   let session;
   if (req.userRole === 'admin') {
+    const conditions = [eq(sessions.worldId, worldId)];
+    if (patientId) conditions.push(eq(sessions.patientId, patientId));
     [session] = await db
       .select()
       .from(sessions)
-      .where(eq(sessions.worldId, worldId))
+      .where(and(...conditions))
       .orderBy(desc(sessions.createdAt))
       .limit(1);
   } else if (req.userRole === 'paciente') {
@@ -146,11 +154,13 @@ export async function getLatestSession(req, res) {
       .orderBy(desc(sessions.createdAt))
       .limit(1);
   } else {
+    const conditions = [eq(sessions.worldId, worldId), eq(users.responsibleTherapistId, req.userId)];
+    if (patientId) conditions.push(eq(sessions.patientId, patientId));
     const rows = await db
       .select({ session: sessions })
       .from(sessions)
       .innerJoin(users, eq(users.id, sessions.patientId))
-      .where(and(eq(sessions.worldId, worldId), eq(users.responsibleTherapistId, req.userId)))
+      .where(and(...conditions))
       .orderBy(desc(sessions.createdAt))
       .limit(1);
     session = rows[0]?.session;

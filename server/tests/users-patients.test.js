@@ -215,3 +215,54 @@ describe('PATCH /api/users/:id', () => {
     });
   });
 });
+
+describe('DELETE /api/users/:id', () => {
+  it('exige sessão ativa (401)', async () => {
+    const res = await request(app).delete('/api/users/00000000-0000-0000-0000-000000000000');
+    expect(res.status).toBe(401);
+  });
+
+  it('terapeuta não pode excluir ninguém (403)', async () => {
+    const { agent: therapistAgent } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    const res = await therapistAgent.delete(`/api/users/${patient.id}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('admin exclui a conta de um terapeuta', async () => {
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const { user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+
+    const res = await adminAgent.delete(`/api/users/${therapist.id}`);
+    expect(res.status).toBe(204);
+
+    const after = await adminAgent.get(`/api/users/${therapist.id}`);
+    expect(after.status).toBe(404);
+  });
+
+  it('pacientes vinculados ao terapeuta excluído ficam sem terapeuta (não quebram)', async () => {
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const { user: therapist } = await createLoggedInUser({ role: 'terapeuta' });
+    const { user: patient } = await createLoggedInUser({ role: 'paciente' });
+    await linkPatientToTherapist(patient.id, therapist.id);
+
+    const res = await adminAgent.delete(`/api/users/${therapist.id}`);
+    expect(res.status).toBe(204);
+
+    const patientAfter = await adminAgent.get(`/api/users/${patient.id}`);
+    expect(patientAfter.status).toBe(200);
+    expect(patientAfter.body.user.responsibleTherapistId).toBeNull();
+  });
+
+  it('admin não pode excluir a própria conta (400)', async () => {
+    const { agent: adminAgent, user: admin } = await createLoggedInUser({ role: 'admin' });
+    const res = await adminAgent.delete(`/api/users/${admin.id}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('usuário inexistente -> 404', async () => {
+    const { agent: adminAgent } = await createLoggedInUser({ role: 'admin' });
+    const res = await adminAgent.delete('/api/users/00000000-0000-0000-0000-000000000000');
+    expect(res.status).toBe(404);
+  });
+});

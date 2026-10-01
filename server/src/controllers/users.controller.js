@@ -128,3 +128,24 @@ export async function updateUser(req, res) {
 
   return res.json({ user: toPublicUser(updated) });
 }
+
+// DELETE /api/users/:id — admin only (checado na rota via requireRole).
+// Efeitos em cascata já definidos no schema (ver schema.js): pacientes
+// vinculados ao terapeuta excluído ficam sem terapeuta (responsibleTherapistId
+// -> null), mundos criados por ele ficam sem autor, mas os códigos de acesso
+// que ele gerou — e as sessões registradas a partir deles — são apagados
+// junto (onDelete: 'cascade' em access_codes.generated_by_id). O front avisa
+// isso na confirmação antes de chamar essa rota.
+export async function deleteUser(req, res) {
+  const target = await findUserById(req.params.id);
+  if (!target) {
+    return res.status(404).json({ error: 'Usuário não encontrado.' });
+  }
+
+  if (req.userId === target.id) {
+    return res.status(400).json({ error: 'Você não pode excluir a própria conta.' });
+  }
+
+  await db.delete(users).where(eq(users.id, target.id));
+  return res.status(204).send();
+}

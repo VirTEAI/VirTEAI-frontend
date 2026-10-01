@@ -51,6 +51,9 @@ export default function Header() {
   const showDashboardLink = user?.role === 'paciente' || user?.role === 'terapeuta';
   const showAdminLink = user?.role === 'admin';
   const showCodesLink = user?.role === 'terapeuta' || user?.role === 'admin';
+  // Mesma regra do AppHeader — faltava aqui, o que fazia o link sumir
+  // nessas páginas "públicas" quando um terapeuta estava logado.
+  const showPatientsLink = user?.role === 'terapeuta';
 
   return (
     <motion.header
@@ -76,6 +79,11 @@ export default function Header() {
           {showAdminLink && (
             <NavLink to="/admin" className={navLinkClass}>
               Painel Admin
+            </NavLink>
+          )}
+          {showPatientsLink && (
+            <NavLink to="/pacientes" className={navLinkClass}>
+              Pacientes
             </NavLink>
           )}
           {showCodesLink && (
@@ -164,6 +172,15 @@ export default function Header() {
               {showAdminLink && (
                 <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
                   Painel Admin
+                </NavLink>
+              )}
+              {showPatientsLink && (
+                <NavLink
+                  to="/pacientes"
+                  className={mobileNavLinkClass}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Pacientes
                 </NavLink>
               )}
               {showCodesLink && (

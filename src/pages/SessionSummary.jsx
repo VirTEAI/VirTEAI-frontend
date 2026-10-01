@@ -46,6 +46,7 @@ export default function SessionSummary() {
   const { worldId } = useParams();
   const [searchParams] = useSearchParams();
   const code = searchParams.get('code');
+  const patientId = searchParams.get('patientId');
   const { worlds } = useWorlds();
   const world = worlds.find((w) => w.id === worldId);
 
@@ -58,9 +59,15 @@ export default function SessionSummary() {
     setIsLoading(true);
     setError(null);
 
+    // `patientId` vem de DashboardWorld.jsx quando quem está vendo é
+    // terapeuta/admin e tinha um paciente selecionado no PatientSelector —
+    // sem isso, /api/sessions/latest devolveria a sessão mais recente entre
+    // TODOS os pacientes dele, não necessariamente a do paciente certo.
     const path = code
       ? `/api/sessions/by-code/${encodeURIComponent(code)}`
-      : `/api/sessions/latest?worldId=${encodeURIComponent(worldId ?? '')}`;
+      : `/api/sessions/latest?worldId=${encodeURIComponent(worldId ?? '')}${
+          patientId ? `&patientId=${encodeURIComponent(patientId)}` : ''
+        }`;
 
     apiFetch(path).then(({ ok, body }) => {
       if (cancelled) return;
@@ -76,7 +83,7 @@ export default function SessionSummary() {
     return () => {
       cancelled = true;
     };
-  }, [code, worldId]);
+  }, [code, worldId, patientId]);
 
   const generalStats = session ? buildGeneralStats(session) : [];
   const topAreas = session ? buildTopAreas(session) : [];
